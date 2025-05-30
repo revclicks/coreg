@@ -8,6 +8,7 @@ import Questions from "@/pages/questions";
 import Campaigns from "@/pages/campaigns";
 import Sites from "@/pages/sites";
 import Stats from "@/pages/stats";
+import AdvancedAnalytics from "@/pages/advanced-analytics";
 import Data from "@/pages/data";
 import Targeting from "@/pages/targeting";
 import Sidebar from "@/components/layout/sidebar";
@@ -37,6 +38,7 @@ function Router() {
       <Route path="/sites" component={Sites} />
       <Route path="/targeting" component={Targeting} />
       <Route path="/stats" component={Stats} />
+      <Route path="/analytics" component={AdvancedAnalytics} />
       <Route path="/data" component={Data} />
       <Route component={NotFound} />
     </Switch>
