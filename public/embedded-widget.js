@@ -74,7 +74,7 @@
       this.userEmail = email;
       console.log('CoReg: Starting questionnaire for email:', email);
 
-      // Load questions and create session
+      // Load questions and create session first
       await this.loadQuestions();
       await this.createSession();
 
@@ -84,8 +84,16 @@
         return;
       }
 
-      // Redirect to full page questionnaire instead of overlay
+      // Ensure session was created successfully
+      if (!this.sessionCreated) {
+        console.error('CoReg: Failed to create session');
+        alert('Unable to start questionnaire. Please try again.');
+        return;
+      }
+
+      // Redirect to full page questionnaire with proper session info
       const questionUrl = `${API_BASE}/questionnaire?email=${encodeURIComponent(email)}&session=${sessionId}&site=${siteCode}`;
+      console.log('CoReg: Redirecting to:', questionUrl);
       window.location.href = questionUrl;
     }
 
