@@ -237,11 +237,11 @@ export default function Stats() {
                             {stat.questionType || 'multiple_choice'}
                           </span>
                         </TableCell>
-                        <TableCell>{stat.views.toLocaleString()}</TableCell>
+                        <TableCell>{(stat.views || 0).toLocaleString()}</TableCell>
                         <TableCell>{stat.responses || 0}</TableCell>
                         <TableCell>
                           <span className="text-indigo-600 font-medium">
-                            {stat.views > 0 ? ((stat.responses || 0) / stat.views * 100).toFixed(1) : '0.0'}%
+                            {(stat.views || 0) > 0 ? ((stat.responses || 0) / (stat.views || 1) * 100).toFixed(1) : '0.0'}%
                           </span>
                         </TableCell>
                         <TableCell>
