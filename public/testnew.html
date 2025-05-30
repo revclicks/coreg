@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoReg Widget Test - New Version</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 15px 0;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .feature-list li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .feature-list li:before {
+            content: "✓ ";
+            color: #4CAF50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CoReg Widget Test - New Version</h1>
+        <p class="subtitle">This page demonstrates the updated questionnaire widget with CashApp landing page design.</p>
+        
+        <div class="content">
+            <h3>New Widget Features</h3>
+            <ul class="feature-list">
+                <li>CashApp $1000 gift card landing page</li>
+                <li>Green gradient background design</li>
+                <li>Customer reviews section</li>
+                <li>Full questionnaire flow</li>
+                <li>Email capture step</li>
+                <li>Targeted ad serving</li>
+            </ul>
+        </div>
+
+        <div class="content">
+            <h3>Widget Implementation</h3>
+            <p>The widget is loaded using this script tag:</p>
+            <div class="code-block">
+                &lt;script src="/widget.js"&gt;&lt;/script&gt;
+            </div>
+            <p><strong>Note:</strong> The widget should appear as a full-page overlay starting with the CashApp offer landing page.</p>
+        </div>
+
+        <div class="content">
+            <h3>How it works:</h3>
+            <ol>
+                <li>Widget loads automatically with CashApp landing page</li>
+                <li>User sees $1000 gift card offer with reviews</li>
+                <li>User clicks Yes/No to start questionnaire</li>
+                <li>Questions are fetched from your admin panel</li>
+                <li>After questions, user enters email to "claim gift card"</li>
+                <li>Targeted ads are served based on responses</li>
+                <li>Analytics data is collected for reporting</li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- CoReg Widget Script -->
+    <script src="/widget.js"></script>
+</body>
+</html>
