@@ -135,6 +135,11 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
       
       setSelectedQuestions(existingQuestions);
       setTargetingLogic(targeting.logic || 'OR');
+      
+      // Set uploaded image if campaign has one
+      if (editingCampaign.imageUrl) {
+        setUploadedImage(editingCampaign.imageUrl);
+      }
     } else {
       form.reset({
         name: "",
@@ -152,6 +157,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
       });
       setSelectedQuestions([]);
       setTargetingLogic('OR');
+      setUploadedImage(null);
     }
   }, [editingCampaign, form]);
 
