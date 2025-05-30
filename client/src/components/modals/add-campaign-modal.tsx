@@ -38,7 +38,9 @@ const formSchema = z.object({
   gender: z.string().optional(),
   device: z.string().optional(),
   states: z.string().optional(),
-  cpcBid: z.string().min(1, "CPC bid is required"),
+  cpcBid: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
+    message: "CPC bid must be a valid number greater than 0"
+  }),
   imageUrl: z.string().optional(),
   url: z.string().min(1, "URL is required"),
   active: z.boolean(),
