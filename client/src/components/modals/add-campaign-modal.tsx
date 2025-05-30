@@ -28,6 +28,7 @@ import { Upload, X, ArrowRight, ArrowLeft } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { insertCampaignSchema, type Campaign, type Question } from "@shared/schema";
+import ConversionPixelManager, { type ConversionPixel } from "@/components/conversion-pixel-manager";
 
 // Simplified form schema
 const formSchema = z.object({
@@ -80,6 +81,9 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
   });
   const [isDragging, setIsDragging] = useState(false);
   const [dragValue, setDragValue] = useState(false);
+
+  // Conversion pixels state
+  const [conversionPixels, setConversionPixels] = useState<ConversionPixel[]>([]);
 
   const { data: questions } = useQuery<Question[]>({
     queryKey: ["/api/questions"],
@@ -206,6 +210,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
         dayParting: dayPartingMode === 'all-day' ? undefined : dayPartingGrid,
         device: deviceTargeting === 'all' ? 'all' : selectedDevices.join(','),
         operatingSystem: osTargeting === 'all' ? 'all' : selectedOS.join(','),
+        conversionPixels: conversionPixels,
       };
       return apiRequest("/api/campaigns", "POST", formData);
     },
