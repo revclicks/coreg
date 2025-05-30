@@ -199,14 +199,29 @@
             <div id="question-content" style="display: none;">
                 <h1 id="question-title" class="question-title"></h1>
                 
-                <div id="yes-no-answers" class="answer-buttons" style="display: none;">
-                    <button class="answer-btn" onclick="questionnaire.answerQuestion('Yes')">Yes</button>
-                    <button class="answer-btn" onclick="questionnaire.answerQuestion('No')">No</button>
+                <div id="radio-button-answers" class="answer-buttons" style="display: none;">
+                    <!-- Radio button options will be populated here -->
                 </div>
                 
                 <div id="multiple-choice-answers" class="multiple-choice" style="display: none;">
                     <div id="choice-options"></div>
-                    <button id="continue-btn" class="continue-btn" onclick="questionnaire.submitChoice()" disabled>
+                    <button id="continue-btn" class="continue-btn" onclick="questionnaire.submitMultipleChoice()" disabled>
+                        Continue
+                    </button>
+                </div>
+                
+                <div id="text-input-answer" style="display: none;">
+                    <input type="text" id="text-answer" class="choice-option" placeholder="Enter your answer..." style="width: 100%; margin-bottom: 20px;">
+                    <button id="text-continue-btn" class="continue-btn" onclick="questionnaire.submitTextAnswer()" disabled>
+                        Continue
+                    </button>
+                </div>
+                
+                <div id="dropdown-answer" style="display: none;">
+                    <select id="dropdown-select" class="choice-option" style="width: 100%; margin-bottom: 20px;">
+                        <option value="">Select an option...</option>
+                    </select>
+                    <button id="dropdown-continue-btn" class="continue-btn" onclick="questionnaire.submitDropdownAnswer()" disabled>
                         Continue
                     </button>
                 </div>
@@ -279,49 +294,126 @@
                 document.getElementById('question-content').style.display = 'block';
                 
                 // Hide all answer types first
-                document.getElementById('yes-no-answers').style.display = 'none';
+                document.getElementById('radio-button-answers').style.display = 'none';
                 document.getElementById('multiple-choice-answers').style.display = 'none';
+                document.getElementById('text-input-answer').style.display = 'none';
+                document.getElementById('dropdown-answer').style.display = 'none';
                 
-                if (question.type === 'multiple_choice' && question.options && question.options.length > 2) {
-                    // Only show multiple choice for questions with more than 2 options
-                    this.showMultipleChoice(question.options);
-                } else {
-                    // Default to Yes/No for single answer questions
-                    document.getElementById('yes-no-answers').style.display = 'flex';
+                // Show appropriate input type based on question type
+                switch (question.type) {
+                    case 'multiple_choice':
+                        this.showMultipleChoice(question.options);
+                        break;
+                    case 'radio_button':
+                        this.showRadioButtons(question.options);
+                        break;
+                    case 'text_input':
+                        this.showTextInput();
+                        break;
+                    case 'dropdown':
+                        this.showDropdown(question.options);
+                        break;
+                    default:
+                        // Default to radio buttons for backwards compatibility
+                        this.showRadioButtons(['Yes', 'No']);
+                        break;
                 }
             }
             
             showMultipleChoice(options) {
                 const choiceContainer = document.getElementById('choice-options');
                 choiceContainer.innerHTML = '';
+                this.selectedChoices = new Set();
                 
                 options.forEach((option, index) => {
-                    const button = document.createElement('button');
-                    button.className = 'choice-option';
-                    button.textContent = option;
-                    button.onclick = () => this.selectChoice(option, button);
-                    choiceContainer.appendChild(button);
+                    const label = document.createElement('label');
+                    label.className = 'choice-option';
+                    label.style.display = 'flex';
+                    label.style.alignItems = 'center';
+                    label.style.cursor = 'pointer';
+                    label.innerHTML = `
+                        <input type="checkbox" value="${option}" style="margin-right: 10px;" onchange="questionnaire.toggleMultipleChoice('${option}', this.checked)">
+                        <span>${option}</span>
+                    `;
+                    choiceContainer.appendChild(label);
                 });
                 
                 document.getElementById('multiple-choice-answers').style.display = 'block';
                 document.getElementById('continue-btn').disabled = true;
             }
             
-            selectChoice(choice, buttonElement) {
-                // Remove selected class from all options
-                document.querySelectorAll('.choice-option').forEach(btn => {
-                    btn.classList.remove('selected');
+            showRadioButtons(options) {
+                const radioContainer = document.getElementById('radio-button-answers');
+                radioContainer.innerHTML = '';
+                
+                options.forEach((option, index) => {
+                    const button = document.createElement('button');
+                    button.className = 'answer-btn';
+                    button.textContent = option;
+                    button.onclick = () => this.answerQuestion(option);
+                    radioContainer.appendChild(button);
                 });
                 
-                // Add selected class to clicked option
-                buttonElement.classList.add('selected');
-                this.selectedChoice = choice;
-                document.getElementById('continue-btn').disabled = false;
+                document.getElementById('radio-button-answers').style.display = 'flex';
             }
             
-            submitChoice() {
-                if (this.selectedChoice) {
-                    this.answerQuestion(this.selectedChoice);
+            showTextInput() {
+                document.getElementById('text-input-answer').style.display = 'block';
+                document.getElementById('text-continue-btn').disabled = true;
+                
+                const textInput = document.getElementById('text-answer');
+                textInput.value = '';
+                textInput.oninput = () => {
+                    document.getElementById('text-continue-btn').disabled = !textInput.value.trim();
+                };
+            }
+            
+            showDropdown(options) {
+                const dropdown = document.getElementById('dropdown-select');
+                dropdown.innerHTML = '<option value="">Select an option...</option>';
+                
+                options.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option;
+                    optionElement.textContent = option;
+                    dropdown.appendChild(optionElement);
+                });
+                
+                dropdown.onchange = () => {
+                    document.getElementById('dropdown-continue-btn').disabled = !dropdown.value;
+                };
+                
+                document.getElementById('dropdown-answer').style.display = 'block';
+                document.getElementById('dropdown-continue-btn').disabled = true;
+            }
+            
+            toggleMultipleChoice(choice, isSelected) {
+                if (isSelected) {
+                    this.selectedChoices.add(choice);
+                } else {
+                    this.selectedChoices.delete(choice);
+                }
+                document.getElementById('continue-btn').disabled = this.selectedChoices.size === 0;
+            }
+            
+            submitMultipleChoice() {
+                if (this.selectedChoices.size > 0) {
+                    const answer = Array.from(this.selectedChoices).join(', ');
+                    this.answerQuestion(answer);
+                }
+            }
+            
+            submitTextAnswer() {
+                const textAnswer = document.getElementById('text-answer').value.trim();
+                if (textAnswer) {
+                    this.answerQuestion(textAnswer);
+                }
+            }
+            
+            submitDropdownAnswer() {
+                const dropdownAnswer = document.getElementById('dropdown-select').value;
+                if (dropdownAnswer) {
+                    this.answerQuestion(dropdownAnswer);
                 }
             }
             
