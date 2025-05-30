@@ -86,21 +86,22 @@
     }
 
     createContainer() {
-      // Create widget container
+      // Create widget container as full-page overlay
       this.container = document.createElement('div');
       this.container.id = 'coreg-widget';
       this.container.style.cssText = `
         position: fixed;
-        top: 20px;
-        right: 20px;
-        width: 350px;
-        max-width: 90vw;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
         z-index: 999999;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        border: 1px solid #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
       `;
 
       document.body.appendChild(this.container);
@@ -115,40 +116,33 @@
       const question = this.questions[this.currentQuestionIndex];
       
       this.container.innerHTML = `
-        <div style="padding: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 600;">
-              Question ${this.currentQuestionIndex + 1} of ${this.questions.length}
-            </h3>
-            <button onclick="document.getElementById('coreg-widget').remove()" 
-                    style="background: none; border: none; font-size: 18px; cursor: pointer; color: #64748b;">
-              ×
-            </button>
+        <!-- Blue Header -->
+        <div style="position: absolute; top: 0; left: 0; width: 100%; background: #1e3a8a; color: white; text-align: center; padding: 20px 0; font-size: 18px; font-weight: 600;">
+          Please Answer the Question Below
+        </div>
+        
+        <!-- Question Card -->
+        <div style="background: white; border-radius: 12px; padding: 40px; max-width: 500px; width: 90%; margin: 0 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+          <h2 style="margin: 0 0 30px 0; color: #1f2937; font-size: 24px; font-weight: 600; text-align: center; line-height: 1.4;">
+            ${question.text}
+          </h2>
+          
+          <div id="answer-options" style="margin-bottom: 30px;">
+            ${this.renderAnswerOptions(question)}
           </div>
           
-          <div style="margin-bottom: 20px;">
-            <p style="margin: 0 0 15px 0; color: #374151; font-size: 14px; line-height: 1.5;">
-              ${question.text}
+          <div style="text-align: center; margin-top: 30px;">
+            <p style="margin: 0; color: #6b7280; font-size: 14px;">
+              Learn more about how we use your information by visiting our Privacy Policy.
             </p>
-            
-            <div id="answer-options">
-              ${this.renderAnswerOptions(question)}
-            </div>
-          </div>
-          
-          <div style="display: flex; gap: 10px;">
-            ${this.currentQuestionIndex > 0 ? `
-              <button onclick="coregWidget.previousQuestion()" 
-                      style="flex: 1; padding: 10px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; font-size: 14px; color: #475569;">
-                Previous
-              </button>
-            ` : ''}
-            <button onclick="coregWidget.nextQuestion()" 
-                    style="flex: 1; padding: 10px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
-              ${this.currentQuestionIndex === this.questions.length - 1 ? 'Finish' : 'Next'}
-            </button>
           </div>
         </div>
+        
+        <!-- Close button -->
+        <button onclick="document.getElementById('coreg-widget').remove()" 
+                style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 24px; cursor: pointer; color: white; font-weight: bold;">
+          ×
+        </button>
       `;
     }
 
@@ -159,34 +153,52 @@
         case 'multiple_choice':
         case 'radio':
           return options.map((option, index) => `
-            <label style="display: block; margin-bottom: 10px; cursor: pointer;">
-              <input type="radio" name="answer" value="${option}" 
-                     style="margin-right: 8px;">
-              <span style="color: #374151; font-size: 14px;">${option}</span>
-            </label>
+            <button type="button" onclick="coregWidget.selectAnswer('${option}')" 
+                    style="display: block; width: 100%; margin-bottom: 15px; padding: 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.2s; ${
+                      option.toLowerCase() === 'yes' 
+                        ? 'background: #10b981; color: white;' 
+                        : 'background: #e5e7eb; color: #374151;'
+                    } hover:transform: translateY(-2px); hover:box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+              ${option}
+            </button>
           `).join('');
           
         case 'text':
           return `
             <input type="text" name="answer" placeholder="Type your answer..." 
-                   style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+                   style="width: 100%; padding: 15px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px; outline: none; transition: border-color 0.2s;" 
+                   onfocus="this.style.borderColor='#3b82f6';" 
+                   onblur="this.style.borderColor='#e5e7eb';">
+            <button onclick="coregWidget.nextQuestion()" 
+                    style="margin-top: 20px; width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+              Continue
+            </button>
           `;
           
         case 'select':
           return `
-            <select name="answer" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px;">
+            <select name="answer" onchange="if(this.value) coregWidget.selectAnswer(this.value);" 
+                    style="width: 100%; padding: 15px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px; background: white;">
               <option value="">Select an option...</option>
               ${options.map(option => `<option value="${option}">${option}</option>`).join('')}
             </select>
           `;
           
         default:
-          return '<p style="color: #ef4444;">Unsupported question type</p>';
+          return '<p style="color: #ef4444; text-align: center;">Unsupported question type</p>';
       }
     }
 
+    selectAnswer(answer) {
+      this.selectedAnswer = answer;
+      // Automatically proceed to next question after selection
+      setTimeout(() => {
+        this.nextQuestion();
+      }, 300); // Small delay for visual feedback
+    }
+
     async nextQuestion() {
-      const answer = this.getSelectedAnswer();
+      const answer = this.selectedAnswer || this.getSelectedAnswer();
       if (!answer) {
         alert('Please select an answer before continuing.');
         return;
@@ -203,6 +215,9 @@
       
       // Send response to server
       await this.saveResponse(response);
+      
+      // Clear selected answer
+      this.selectedAnswer = null;
       
       this.currentQuestionIndex++;
       this.showCurrentQuestion();
@@ -271,60 +286,72 @@
 
     renderAd(campaign) {
       this.container.innerHTML = `
-        <div style="padding: 20px; text-align: center;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 600;">
-              Recommended for You
-            </h3>
-            <button onclick="document.getElementById('coreg-widget').remove()" 
-                    style="background: none; border: none; font-size: 18px; cursor: pointer; color: #64748b;">
-              ×
-            </button>
-          </div>
-          
+        <!-- Blue Header -->
+        <div style="position: absolute; top: 0; left: 0; width: 100%; background: #1e3a8a; color: white; text-align: center; padding: 20px 0; font-size: 18px; font-weight: 600;">
+          Thank You for Your Response!
+        </div>
+        
+        <!-- Ad Card -->
+        <div style="background: white; border-radius: 12px; padding: 40px; max-width: 500px; width: 90%; margin: 0 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); text-align: center;">
           ${campaign.imageUrl ? `
             <img src="${campaign.imageUrl}" alt="${campaign.name}" 
-                 style="width: 100%; max-width: 200px; height: auto; border-radius: 8px; margin-bottom: 15px;">
+                 style="width: 100%; max-width: 300px; height: auto; border-radius: 12px; margin-bottom: 20px;">
           ` : ''}
           
-          <h4 style="margin: 0 0 10px 0; color: #1e293b; font-size: 18px; font-weight: 600;">
+          <h2 style="margin: 0 0 15px 0; color: #1f2937; font-size: 24px; font-weight: 600;">
             ${campaign.name}
-          </h4>
+          </h2>
+          
+          <p style="margin: 0 0 25px 0; color: #6b7280; font-size: 16px; line-height: 1.5;">
+            Based on your responses, this offer might interest you.
+          </p>
           
           <a href="${campaign.url}" target="_blank" 
-             style="display: inline-block; padding: 12px 24px; background: #3b82f6; color: white; text-decoration: none; border-radius: 6px; font-weight: 500; margin-top: 10px;">
+             style="display: inline-block; padding: 15px 30px; background: #10b981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; margin-bottom: 20px; transition: background 0.2s;">
             Learn More
           </a>
           
-          <p style="margin: 15px 0 0 0; font-size: 12px; color: #64748b;">
+          <p style="margin: 20px 0 0 0; color: #6b7280; font-size: 14px;">
             Thank you for completing our questionnaire!
           </p>
         </div>
+        
+        <!-- Close button -->
+        <button onclick="document.getElementById('coreg-widget').remove()" 
+                style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 24px; cursor: pointer; color: white; font-weight: bold;">
+          ×
+        </button>
       `;
     }
 
     showThankYou() {
       this.container.innerHTML = `
-        <div style="padding: 20px; text-align: center;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-            <h3 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 600;">
-              Thank You!
-            </h3>
-            <button onclick="document.getElementById('coreg-widget').remove()" 
-                    style="background: none; border: none; font-size: 18px; cursor: pointer; color: #64748b;">
-              ×
-            </button>
-          </div>
+        <!-- Blue Header -->
+        <div style="position: absolute; top: 0; left: 0; width: 100%; background: #1e3a8a; color: white; text-align: center; padding: 20px 0; font-size: 18px; font-weight: 600;">
+          Thank You for Your Response!
+        </div>
+        
+        <!-- Thank You Card -->
+        <div style="background: white; border-radius: 12px; padding: 40px; max-width: 500px; width: 90%; margin: 0 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); text-align: center;">
+          <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 24px; font-weight: 600;">
+            Thank You!
+          </h2>
           
-          <p style="margin: 0; color: #374151; font-size: 14px; line-height: 1.5;">
+          <p style="margin: 0 0 25px 0; color: #6b7280; font-size: 16px; line-height: 1.5;">
             Thank you for completing our questionnaire. Your responses help us provide better content.
           </p>
           
           <button onclick="document.getElementById('coreg-widget').remove()" 
-                  style="margin-top: 15px; padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                  style="padding: 15px 30px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600;">
             Close
           </button>
         </div>
+        
+        <!-- Close button -->
+        <button onclick="document.getElementById('coreg-widget').remove()" 
+                style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 24px; cursor: pointer; color: white; font-weight: bold;">
+          ×
+        </button>
       `;
     }
 
