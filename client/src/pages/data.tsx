@@ -65,14 +65,28 @@ export default function Data() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center text-slate-500 py-12">
-                      <div className="space-y-2">
-                        <p>No data collection records available yet.</p>
-                        <p className="text-sm">Data will appear here once users start interacting with questionnaires.</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                  {responseData?.responses?.length > 0 ? (
+                    responseData.responses.map((response: any, index: number) => (
+                      <TableRow key={index}>
+                        <TableCell>{new Date(response.timestamp).toLocaleString()}</TableCell>
+                        <TableCell>{response.site}</TableCell>
+                        <TableCell>{response.question}</TableCell>
+                        <TableCell>{response.answer}</TableCell>
+                        <TableCell className="font-mono text-sm">{response.sessionId}</TableCell>
+                        <TableCell>{response.device}</TableCell>
+                        <TableCell>{response.state}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-slate-500 py-12">
+                        <div className="space-y-2">
+                          <p>No data collection records available yet.</p>
+                          <p className="text-sm">Data will appear here once users start interacting with questionnaires.</p>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>

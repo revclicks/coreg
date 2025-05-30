@@ -1,10 +1,13 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
 import { 
   insertQuestionSchema, insertCampaignSchema, insertSiteSchema,
-  insertUserSessionSchema, insertQuestionResponseSchema, insertCampaignClickSchema
+  insertUserSessionSchema, insertQuestionResponseSchema, insertCampaignClickSchema,
+  questions, campaigns, sites, userSessions, questionResponses, campaignImpressions, campaignClicks, campaignConversions
 } from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { readFileSync } from "fs";
