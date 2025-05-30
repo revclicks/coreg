@@ -1,12 +1,13 @@
 import { 
   questions, campaigns, sites, userSessions, questionResponses, 
-  campaignClicks, campaignConversions,
+  campaignClicks, campaignImpressions, campaignConversions,
   type Question, type InsertQuestion,
   type Campaign, type InsertCampaign,
   type Site, type InsertSite,
   type UserSession, type InsertUserSession,
   type QuestionResponse, type InsertQuestionResponse,
   type CampaignClick, type InsertCampaignClick,
+  type CampaignImpression, type InsertCampaignImpression,
   type CampaignConversion, type InsertCampaignConversion
 } from "@shared/schema";
 import { db } from "./db";
@@ -44,6 +45,9 @@ export interface IStorage {
   createQuestionResponse(response: InsertQuestionResponse): Promise<QuestionResponse>;
   getSessionResponses(sessionId: string): Promise<QuestionResponse[]>;
 
+  // Campaign Impressions
+  createCampaignImpression(impression: InsertCampaignImpression): Promise<CampaignImpression>;
+
   // Campaign Clicks
   createCampaignClick(click: InsertCampaignClick): Promise<CampaignClick>;
   getCampaignClicks(campaignId: number): Promise<CampaignClick[]>;
@@ -52,8 +56,8 @@ export interface IStorage {
   createCampaignConversion(conversion: InsertCampaignConversion): Promise<CampaignConversion>;
 
   // Analytics
-  getQuestionStats(): Promise<any[]>;
-  getCampaignStats(): Promise<any[]>;
+  getQuestionStats(startDate?: Date, endDate?: Date): Promise<any[]>;
+  getCampaignStats(startDate?: Date, endDate?: Date): Promise<any[]>;
   getDashboardStats(): Promise<any>;
 }
 
@@ -183,6 +187,12 @@ export class DatabaseStorage implements IStorage {
 
   async getCampaignClicks(campaignId: number): Promise<CampaignClick[]> {
     return await db.select().from(campaignClicks).where(eq(campaignClicks.campaignId, campaignId));
+  }
+
+  // Campaign Impressions
+  async createCampaignImpression(impression: InsertCampaignImpression): Promise<CampaignImpression> {
+    const [newImpression] = await db.insert(campaignImpressions).values(impression).returning();
+    return newImpression;
   }
 
   // Campaign Conversions
