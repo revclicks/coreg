@@ -9,6 +9,7 @@ import Campaigns from "@/pages/campaigns";
 import Sites from "@/pages/sites";
 import Stats from "@/pages/stats";
 import Data from "@/pages/data";
+import Targeting from "@/pages/targeting";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import NotFound from "@/pages/not-found";
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/questions" component={Questions} />
       <Route path="/campaigns" component={Campaigns} />
       <Route path="/sites" component={Sites} />
+      <Route path="/targeting" component={Targeting} />
       <Route path="/stats" component={Stats} />
       <Route path="/data" component={Data} />
       <Route component={NotFound} />

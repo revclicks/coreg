@@ -2,6 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { z } from "zod";
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +22,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Upload, X } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { insertCampaignSchema, type Campaign, type Question } from "@shared/schema";
@@ -40,6 +44,17 @@ interface AddCampaignModalProps {
 
 export default function AddCampaignModal({ open, onClose, editingCampaign }: AddCampaignModalProps) {
   const { toast } = useToast();
+  const [uploadedImage, setUploadedImage] = useState<string | null>(editingCampaign?.imageUrl || null);
+  const [dayPartingMode, setDayPartingMode] = useState<'all-day' | 'custom'>('all-day');
+  const [dayPartingGrid, setDayPartingGrid] = useState<Record<string, boolean[]>>({
+    monday: new Array(24).fill(false),
+    tuesday: new Array(24).fill(false),
+    wednesday: new Array(24).fill(false),
+    thursday: new Array(24).fill(false),
+    friday: new Array(24).fill(false),
+    saturday: new Array(24).fill(false),
+    sunday: new Array(24).fill(false),
+  });
 
   const { data: questions } = useQuery<Question[]>({
     queryKey: ["/api/questions"],
