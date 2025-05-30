@@ -589,6 +589,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
+      // Format campaign performance data to ensure all required fields
+      const campaignPerformance = campaignStats.map(campaign => ({
+        campaignId: campaign.campaignId || campaign.id,
+        campaignName: campaign.campaignName || campaign.name,
+        impressions: campaign.impressions || 0,
+        clicks: campaign.clicks || 0,
+        conversions: campaign.conversions || 0,
+        revenue: campaign.revenue || 0,
+        spend: campaign.spend || 0,
+        ctr: campaign.impressions > 0 ? ((campaign.clicks || 0) / campaign.impressions) * 100 : 0,
+        cvr: campaign.clicks > 0 ? ((campaign.conversions || 0) / campaign.clicks) * 100 : 0,
+        cpc: campaign.clicks > 0 ? (campaign.spend || 0) / campaign.clicks : 0,
+        roi: campaign.spend > 0 ? (((campaign.revenue || 0) - campaign.spend) / campaign.spend) * 100 : 0,
+        status: campaign.active ? 'active' : 'inactive'
+      }));
+
+      // Format question performance data
+      const questionPerformance = questionStats.map(question => ({
+        questionId: question.questionId || question.id,
+        questionText: question.questionText || question.text,
+        impressions: question.impressions || 0,
+        clicks: question.clicks || 0,
+        conversions: question.conversions || 0,
+        revenue: question.revenue || 0,
+        ctr: question.impressions > 0 ? ((question.clicks || 0) / question.impressions) * 100 : 0,
+        cvr: question.clicks > 0 ? ((question.conversions || 0) / question.clicks) * 100 : 0,
+        averageRevenue: question.conversions > 0 ? (question.revenue || 0) / question.conversions : 0
+      }));
+
       const advancedStats = {
         overview: {
           totalImpressions,
@@ -603,8 +632,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           roi
         },
         timeSeriesData,
-        campaignPerformance: campaignStats,
-        questionPerformance: questionStats,
+        campaignPerformance,
+        questionPerformance,
         deviceBreakdown,
         hourlyPerformance,
         verticalPerformance
