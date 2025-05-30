@@ -1,16 +1,46 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/ui/badge";
+import { CalendarIcon, TrendingUp, BarChart, DollarSign, MousePointer, Eye, Target } from "lucide-react";
+import { format } from "date-fns";
 
 export default function Stats() {
-  const { data: questionStats, isLoading: loadingQuestions } = useQuery({
-    queryKey: ["/api/stats/questions"],
+  const [dateRange, setDateRange] = useState<{
+    from: Date | undefined;
+    to: Date | undefined;
+  }>({
+    from: undefined,
+    to: undefined,
   });
 
-  const { data: campaignStats, isLoading: loadingCampaigns } = useQuery({
-    queryKey: ["/api/stats/campaigns"],
+  const { data: campaignStats = [], isLoading: loadingCampaigns } = useQuery({
+    queryKey: ["/api/stats/campaigns-enhanced", dateRange],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (dateRange.from) params.append("startDate", dateRange.from.toISOString());
+      if (dateRange.to) params.append("endDate", dateRange.to.toISOString());
+      
+      const response = await fetch(`/api/stats/campaigns-enhanced?${params}`);
+      return response.json();
+    }
+  });
+
+  const { data: questionStats = [], isLoading: loadingQuestions } = useQuery({
+    queryKey: ["/api/stats/questions-enhanced", dateRange],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (dateRange.from) params.append("startDate", dateRange.from.toISOString());
+      if (dateRange.to) params.append("endDate", dateRange.to.toISOString());
+      
+      const response = await fetch(`/api/stats/questions-enhanced?${params}`);
+      return response.json();
+    }
   });
 
   if (loadingQuestions || loadingCampaigns) {

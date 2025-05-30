@@ -402,6 +402,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`Selected campaign: ${selectedCampaign.id} - ${selectedCampaign.name}`);
 
+      // Track impression
+      await storage.createCampaignImpression({
+        campaignId: selectedCampaign.id,
+        sessionId,
+      });
+
       // Generate click ID and build URL
       const clickId = nanoid(16);
       let finalUrl = selectedCampaign.url;
@@ -419,14 +425,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add click ID
       const separator = finalUrl.includes('?') ? '&' : '?';
       finalUrl += `${separator}ckid=${clickId}`;
-
-      // Log campaign click
-      await storage.createCampaignClick({
-        sessionId,
-        campaignId: selectedCampaign.id,
-        clickId,
-        url: finalUrl,
-      });
 
       res.json({
         campaign: {
@@ -488,6 +486,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch campaign stats" });
+    }
+  });
+
+  // Enhanced analytics endpoints
+  app.get("/api/stats/campaigns-enhanced", async (req, res) => {
+    try {
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      
+      const stats = await storage.getCampaignStats(startDate, endDate);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching enhanced campaign stats:", error);
+      res.status(500).json({ error: "Failed to fetch campaign stats" });
+    }
+  });
+
+  app.get("/api/stats/questions-enhanced", async (req, res) => {
+    try {
+      const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
+      const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+      
+      const stats = await storage.getQuestionStats(startDate, endDate);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching enhanced question stats:", error);
+      res.status(500).json({ error: "Failed to fetch question stats" });
+    }
+  });
+
+  // Click tracking endpoint
+  app.post("/api/clicks", async (req, res) => {
+    try {
+      const { sessionId, campaignId, clickId, url } = req.body;
+      const click = await storage.createCampaignClick({
+        sessionId,
+        campaignId,
+        clickId,
+        url,
+      });
+      res.json(click);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to record click" });
     }
   });
 

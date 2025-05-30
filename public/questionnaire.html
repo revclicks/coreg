@@ -497,6 +497,9 @@
             }
 
             renderAd(campaign) {
+                // Store campaign ID for click tracking
+                this.currentCampaignId = campaign.id;
+                
                 // Update the header
                 document.querySelector('.header').textContent = 'Special Offer';
                 document.querySelector('.header').style.background = '#1e3a8a';
@@ -511,7 +514,7 @@
                         </p>
                         
                         <div style="display: flex; gap: 15px; margin-top: 30px; flex-wrap: wrap;">
-                            <a href="${campaign.url}" target="_blank" 
+                            <a href="${campaign.url}" target="_blank" onclick="questionnaire.trackClick('${campaign.clickId}')"
                                style="flex: 1; min-width: 200px; padding: 18px 24px; background: #10b981; color: white; text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: 600; display: block; text-align: center; transition: background 0.2s;">
                                 Learn More
                             </a>
@@ -542,6 +545,23 @@
                         </button>
                     </div>
                 `;
+            }
+
+            async trackClick(clickId) {
+                try {
+                    await fetch('/api/clicks', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            sessionId: this.sessionId,
+                            campaignId: this.currentCampaignId,
+                            clickId: clickId,
+                            url: window.location.href
+                        })
+                    });
+                } catch (error) {
+                    console.error('Error tracking click:', error);
+                }
             }
 
             getDeviceType() {

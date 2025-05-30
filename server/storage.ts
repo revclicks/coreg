@@ -202,48 +202,67 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Analytics
-  async getQuestionStats(): Promise<any[]> {
-    const stats = await db
+  async getQuestionStats(startDate?: Date, endDate?: Date): Promise<any[]> {
+    let query = db
       .select({
         questionId: questions.id,
         questionText: questions.text,
-        views: sql<number>`COUNT(DISTINCT ${questionResponses.sessionId})`,
-        clicks: sql<number>`COUNT(${campaignClicks.id})`,
-        conversions: sql<number>`COUNT(${campaignConversions.id})`,
+        questionType: questions.type,
+        responses: sql<number>`COUNT(${questionResponses.id})`,
+        responseRate: sql<number>`ROUND(COUNT(${questionResponses.id}) * 100.0 / NULLIF(COUNT(DISTINCT ${questionResponses.sessionId}), 0), 2)`,
       })
       .from(questions)
       .leftJoin(questionResponses, eq(questions.id, questionResponses.questionId))
-      .leftJoin(campaignClicks, eq(questionResponses.sessionId, campaignClicks.sessionId))
-      .leftJoin(campaignConversions, eq(campaignClicks.clickId, campaignConversions.clickId))
-      .groupBy(questions.id, questions.text);
+      .groupBy(questions.id, questions.text, questions.type);
 
-    return stats.map(stat => ({
-      ...stat,
-      ctr: stat.views > 0 ? (stat.clicks / stat.views * 100).toFixed(2) : '0.00',
-      cvr: stat.clicks > 0 ? (stat.conversions / stat.clicks * 100).toFixed(2) : '0.00',
-      epc: stat.clicks > 0 ? (0 / stat.clicks).toFixed(2) : '0.00', // TODO: Calculate actual EPC
-    }));
+    if (startDate) {
+      query = query.where(
+        startDate && endDate 
+          ? and(gte(questionResponses.timestamp, startDate), lte(questionResponses.timestamp, endDate))
+          : gte(questionResponses.timestamp, startDate)
+      );
+    }
+
+    return await query;
   }
 
-  async getCampaignStats(): Promise<any[]> {
-    const stats = await db
+  async getCampaignStats(startDate?: Date, endDate?: Date): Promise<any[]> {
+    let baseQuery = db
       .select({
         campaignId: campaigns.id,
         campaignName: campaigns.name,
         vertical: campaigns.vertical,
-        clicks: sql<number>`COUNT(${campaignClicks.id})`,
-        conversions: sql<number>`COUNT(${campaignConversions.id})`,
+        cpcBid: campaigns.cpcBid,
+        dailyBudget: campaigns.dailyBudget,
+        impressions: sql<number>`COUNT(DISTINCT ${campaignImpressions.id})`,
+        clicks: sql<number>`COUNT(DISTINCT ${campaignClicks.id})`,
+        conversions: sql<number>`COUNT(DISTINCT ${campaignConversions.id})`,
         revenue: sql<number>`COALESCE(SUM(${campaignConversions.revenue}), 0)`,
+        spend: sql<number>`COUNT(DISTINCT ${campaignClicks.id}) * ${campaigns.cpcBid}`,
       })
       .from(campaigns)
+      .leftJoin(campaignImpressions, eq(campaigns.id, campaignImpressions.campaignId))
       .leftJoin(campaignClicks, eq(campaigns.id, campaignClicks.campaignId))
       .leftJoin(campaignConversions, eq(campaignClicks.clickId, campaignConversions.clickId))
-      .groupBy(campaigns.id, campaigns.name, campaigns.vertical);
+      .groupBy(campaigns.id, campaigns.name, campaigns.vertical, campaigns.cpcBid, campaigns.dailyBudget);
+
+    if (startDate) {
+      const dateFilter = startDate && endDate 
+        ? and(gte(campaignImpressions.timestamp, startDate), lte(campaignImpressions.timestamp, endDate))
+        : gte(campaignImpressions.timestamp, startDate);
+      
+      baseQuery = baseQuery.where(dateFilter);
+    }
+
+    const stats = await baseQuery;
 
     return stats.map(stat => ({
       ...stat,
-      cvr: stat.clicks > 0 ? (stat.conversions / stat.clicks * 100).toFixed(2) : '0.00',
+      ctr: stat.impressions > 0 ? ((stat.clicks / stat.impressions) * 100).toFixed(2) : '0.00',
+      cvr: stat.clicks > 0 ? ((stat.conversions / stat.clicks) * 100).toFixed(2) : '0.00',
       epc: stat.clicks > 0 ? (Number(stat.revenue) / stat.clicks).toFixed(2) : '0.00',
+      roi: Number(stat.spend) > 0 ? (((Number(stat.revenue) - Number(stat.spend)) / Number(stat.spend)) * 100).toFixed(2) : '0.00',
+      cpa: stat.conversions > 0 ? (Number(stat.spend) / stat.conversions).toFixed(2) : '0.00',
     }));
   }
 
