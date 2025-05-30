@@ -129,7 +129,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
     mutationFn: (data: any) => {
       const formData = {
         ...data,
-        cpcBid: parseFloat(data.cpcBid),
+        cpcBid: data.cpcBid,
         targeting: selectedQuestions.length > 0 ? 
           selectedQuestions.reduce((acc, item) => ({ 
             ...acc, 
@@ -162,7 +162,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
     mutationFn: (data: any) => {
       const formData = {
         ...data,
-        cpcBid: parseFloat(data.cpcBid),
+        cpcBid: data.cpcBid,
         targeting: selectedQuestions.length > 0 ? 
           selectedQuestions.reduce((acc, item) => ({ 
             ...acc, 
