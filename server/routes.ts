@@ -95,6 +95,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Questionnaire page
+  app.get("/questionnaire", (req, res) => {
+    try {
+      const questionnairePage = readFileSync(join(process.cwd(), "public", "questionnaire.html"), "utf8");
+      res.setHeader("Content-Type", "text/html");
+      res.send(questionnairePage);
+    } catch (error) {
+      res.status(500).send("Error loading questionnaire page");
+    }
+  });
+
   // Questions endpoints
   app.get("/api/questions", async (req, res) => {
     try {

@@ -84,8 +84,9 @@
         return;
       }
 
-      this.createContainer();
-      this.showCurrentQuestion();
+      // Redirect to full page questionnaire instead of overlay
+      const questionUrl = `${API_BASE}/questionnaire?email=${encodeURIComponent(email)}&session=${sessionId}&site=${siteCode}`;
+      window.location.href = questionUrl;
     }
 
     createContainer() {
