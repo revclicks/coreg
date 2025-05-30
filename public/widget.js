@@ -413,7 +413,21 @@
         return;
       }
       
-      // Save email to responses
+      // Save email to database
+      try {
+        await fetch(`${API_BASE}/api/collect-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: sessionId,
+            email: email
+          })
+        });
+      } catch (error) {
+        console.error('Error saving email:', error);
+      }
+      
+      // Store email locally as well
       this.userEmail = email;
       
       // Show ad after email capture
