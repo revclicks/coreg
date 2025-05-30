@@ -326,24 +326,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Check if campaign has specific question targeting
         const hasSpecificTargeting = Object.keys(targeting).some(key => 
-          key.startsWith('question_') && targeting[key] === true
+          key.startsWith('question_') && targeting[key] === true && key !== 'logic'
         );
         
         if (hasSpecificTargeting) {
           // Check if user responses match targeting
           const matches = questionResponses.some((response: any) => {
-            const targetingKey = `question_${response.questionId}`;
-            const hasTargeting = targeting[targetingKey] === true;
-            console.log(`Checking question ${response.questionId}: targeting=${hasTargeting}, answer=${response.answer}`);
+            // Try different answer formats
+            const answerLower = response.answer.toLowerCase();
+            const answerUpper = response.answer.toUpperCase();
+            const answerCapitalized = response.answer.charAt(0).toUpperCase() + response.answer.slice(1).toLowerCase();
             
-            // If campaign targets this question, check if answer matches
-            if (hasTargeting) {
-              const answerKey = `question_${response.questionId}_${response.answer}`;
-              const answerMatches = targeting[answerKey] === true;
-              console.log(`Answer targeting for ${answerKey}: ${answerMatches}`);
-              return answerMatches || targeting[targetingKey] === true; // Match if answer-specific or general question targeting
+            const possibleKeys = [
+              `question_${response.questionId}_${response.answer}`,
+              `question_${response.questionId}_${answerLower}`,
+              `question_${response.questionId}_${answerUpper}`,
+              `question_${response.questionId}_${answerCapitalized}`
+            ];
+            
+            console.log(`Trying targeting keys for question ${response.questionId} with answer "${response.answer}":`, possibleKeys);
+            console.log(`Available targeting keys:`, Object.keys(targeting));
+            
+            for (const key of possibleKeys) {
+              if (targeting[key] === true) {
+                console.log(`✓ Match found for key: ${key}`);
+                return true;
+              }
             }
-            return false;
+            
+            // Check for general question targeting (fallback)
+            const questionKey = `question_${response.questionId}`;
+            const questionMatches = targeting[questionKey] === true;
+            console.log(`Checking question targeting for ${questionKey}: ${questionMatches}`);
+            
+            return questionMatches;
           });
           console.log(`Campaign ${campaign.id} question targeting result:`, matches);
           return matches;
