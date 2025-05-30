@@ -58,6 +58,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   const [selectedOS, setSelectedOS] = useState<string[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<{questionId: number, answer?: string}[]>([]);
+  const [targetingLogic, setTargetingLogic] = useState<'AND' | 'OR'>('AND');
   
   // Day parting state
   const [dayPartingMode, setDayPartingMode] = useState<'all-day' | 'custom'>('all-day');
@@ -95,11 +96,10 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
     },
   });
 
-  // EST time labels in 12-hour format
+  // EST time labels in 12-hour format starting at 12AM
   const estHours = Array.from({ length: 24 }, (_, i) => {
-    const estHour = (i - 5 + 24) % 24;
-    const hour12 = estHour === 0 ? 12 : estHour > 12 ? estHour - 12 : estHour;
-    const ampm = estHour < 12 ? 'AM' : 'PM';
+    const hour12 = i === 0 ? 12 : i > 12 ? i - 12 : i;
+    const ampm = i < 12 ? 'AM' : 'PM';
     return `${hour12}${ampm}`;
   });
 
@@ -130,7 +130,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
           selectedQuestions.reduce((acc, item) => ({ 
             ...acc, 
             [`question_${item.questionId}${item.answer ? `_${item.answer}` : ''}`]: true 
-          }), {}) : 
+          }), { logic: targetingLogic }) : 
           undefined,
         dayParting: dayPartingMode === 'all-day' ? undefined : dayPartingGrid,
         device: selectedDevices.length > 0 ? selectedDevices.join(',') : 'all',
@@ -163,7 +163,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
           selectedQuestions.reduce((acc, item) => ({ 
             ...acc, 
             [`question_${item.questionId}${item.answer ? `_${item.answer}` : ''}`]: true 
-          }), {}) : 
+          }), { logic: targetingLogic }) : 
           undefined,
         dayParting: dayPartingMode === 'all-day' ? undefined : dayPartingGrid,
         device: selectedDevices.length > 0 ? selectedDevices.join(',') : 'all',
@@ -762,7 +762,34 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
 
         {/* Selected Questions */}
         <div>
-          <h4 className="font-medium mb-3">Selected Attributes ({selectedQuestions.length})</h4>
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-medium">Selected Attributes ({selectedQuestions.length})</h4>
+            {selectedQuestions.length > 1 && (
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-600">Logic:</span>
+                <div className="flex border rounded-md">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={targetingLogic === 'AND' ? "default" : "ghost"}
+                    onClick={() => setTargetingLogic('AND')}
+                    className="h-8 px-3 text-xs rounded-r-none border-r"
+                  >
+                    AND
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={targetingLogic === 'OR' ? "default" : "ghost"}
+                    onClick={() => setTargetingLogic('OR')}
+                    className="h-8 px-3 text-xs rounded-l-none"
+                  >
+                    OR
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
           <div className="border rounded-lg p-4 min-h-[200px]">
             {selectedQuestions.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-8">
@@ -775,12 +802,21 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                   return question ? (
                     <div key={`${item.questionId}-${item.answer || 'any'}-${index}`} className="flex items-center justify-between p-2 bg-blue-50 rounded border">
                       <div className="text-sm font-medium truncate flex-1 mr-2">
-                        <div>{question.text}</div>
-                        {item.answer && (
-                          <div className="text-xs text-blue-600 mt-1">
-                            Answer: {item.answer}
+                        <div className="flex items-center">
+                          {index > 0 && (
+                            <span className="text-xs bg-gray-200 px-2 py-1 rounded mr-2 font-mono">
+                              {targetingLogic}
+                            </span>
+                          )}
+                          <div>
+                            <div>{question.text}</div>
+                            {item.answer && (
+                              <div className="text-xs text-blue-600 mt-1">
+                                Answer: {item.answer}
+                              </div>
+                            )}
                           </div>
-                        )}
+                        </div>
                       </div>
                       <Button
                         type="button"
@@ -794,6 +830,14 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                     </div>
                   ) : null;
                 })}
+                {selectedQuestions.length > 1 && (
+                  <div className="text-xs text-gray-500 mt-2 px-2">
+                    {targetingLogic === 'AND' 
+                      ? 'Users must match ALL selected attributes' 
+                      : 'Users must match ANY of the selected attributes'
+                    }
+                  </div>
+                )}
               </div>
             )}
           </div>
