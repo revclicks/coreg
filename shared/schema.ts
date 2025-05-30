@@ -32,6 +32,7 @@ export const campaigns = pgTable("campaigns", {
   frequency: integer("frequency").notNull().default(1),
   url: text("url").notNull(),
   cpcBid: decimal("cpc_bid", { precision: 10, scale: 2 }).notNull(),
+  dailyBudget: decimal("daily_budget", { precision: 10, scale: 2 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

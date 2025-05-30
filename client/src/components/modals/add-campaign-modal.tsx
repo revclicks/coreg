@@ -41,6 +41,9 @@ const formSchema = z.object({
   cpcBid: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
     message: "CPC bid must be a valid number greater than 0"
   }),
+  dailyBudget: z.string().optional().refine((val) => !val || (!isNaN(Number(val)) && Number(val) > 0), {
+    message: "Daily budget must be a valid number greater than 0"
+  }),
   imageUrl: z.string().optional(),
   url: z.string().min(1, "URL is required"),
   active: z.boolean(),
@@ -93,6 +96,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
       device: "all",
       states: "",
       cpcBid: "0.00",
+      dailyBudget: "",
       imageUrl: "",
       url: "",
       active: true,
@@ -112,6 +116,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
         device: editingCampaign.device || "all",
         states: editingCampaign.states || "",
         cpcBid: editingCampaign.cpcBid?.toString() || "0.00",
+        dailyBudget: editingCampaign.dailyBudget?.toString() || "",
         imageUrl: editingCampaign.imageUrl || "",
         url: editingCampaign.url || "",
         active: editingCampaign.active ?? true,
@@ -191,6 +196,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
       const formData = {
         ...data,
         cpcBid: data.cpcBid,
+        dailyBudget: data.dailyBudget || null,
         targeting: selectedQuestions.length > 0 ? 
           selectedQuestions.reduce((acc, item) => ({ 
             ...acc, 
@@ -224,6 +230,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
       const formData = {
         ...data,
         cpcBid: data.cpcBid,
+        dailyBudget: data.dailyBudget || null,
         targeting: selectedQuestions.length > 0 ? 
           selectedQuestions.reduce((acc, item) => ({ 
             ...acc, 
@@ -531,7 +538,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
         )}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <FormField
           control={form.control}
           name="cpcBid"
@@ -546,6 +553,28 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                   {...field}
                 />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="dailyBudget"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Daily Budget ($)</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="Optional"
+                  {...field}
+                />
+              </FormControl>
+              <p className="text-sm text-muted-foreground">
+                Leave empty for unlimited
+              </p>
               <FormMessage />
             </FormItem>
           )}
