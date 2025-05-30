@@ -109,9 +109,51 @@
                 <li>Analytics data is collected for reporting</li>
             </ol>
         </div>
+
+        <div class="content" style="text-align: center;">
+            <h3>Try the Widget</h3>
+            <p>Click the button below to see the CashApp offer and questionnaire flow:</p>
+            <button onclick="startWidget()" style="
+                background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+                color: white;
+                border: none;
+                padding: 15px 30px;
+                font-size: 18px;
+                font-weight: 600;
+                border-radius: 25px;
+                cursor: pointer;
+                box-shadow: 0 5px 15px rgba(22, 163, 74, 0.4);
+                transition: transform 0.2s;
+            " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                🎁 Claim Your $1000 CashApp Gift Card
+            </button>
+        </div>
     </div>
 
-    <!-- CoReg Widget Script -->
-    <script src="/widget.js"></script>
+    <script>
+        function startWidget() {
+            // Initialize the widget programmatically
+            if (window.coregWidget) {
+                window.coregWidget.init();
+            } else {
+                // If widget hasn't loaded yet, create it
+                window.siteCode = 'DEMO';
+                window.sessionId = 'sess_demo_' + Math.random().toString(36).substr(2, 9);
+                
+                // Load and initialize widget
+                const script = document.createElement('script');
+                script.src = '/widget.js';
+                script.onload = function() {
+                    if (window.coregWidget) {
+                        window.coregWidget.init();
+                    }
+                };
+                document.head.appendChild(script);
+            }
+        }
+    </script>
+
+    <!-- Don't auto-load widget, wait for button click -->
+    <!-- <script src="/widget.js"></script> -->
 </body>
 </html>
