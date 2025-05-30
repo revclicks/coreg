@@ -461,6 +461,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email collection endpoint
+  app.post("/api/collect-email", async (req, res) => {
+    try {
+      const { sessionId, email } = req.body;
+      
+      if (!sessionId || !email) {
+        return res.status(400).json({ message: "Session ID and email are required" });
+      }
+
+      // Save email as a special question response
+      await storage.createQuestionResponse({
+        sessionId: sessionId,
+        questionId: 0, // Special ID for email data
+        answer: email
+      });
+      
+      res.json({ success: true, message: "Email saved successfully" });
+    } catch (error) {
+      console.error('Error saving email:', error);
+      res.status(500).json({ message: "Failed to save email" });
+    }
+  });
+
   // Analytics endpoints
   app.get("/api/stats/dashboard", async (req, res) => {
     try {
