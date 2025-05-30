@@ -40,8 +40,8 @@
         // Create widget container
         this.createContainer();
         
-        // Show first question
-        this.showCurrentQuestion();
+        // Show landing page first
+        this.showLandingPage();
       } catch (error) {
         console.error('CoReg Widget Error:', error);
       }
@@ -107,9 +107,107 @@
       document.body.appendChild(this.container);
     }
 
+    showLandingPage() {
+      this.container.innerHTML = `
+        <!-- Green gradient background -->
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 40%; background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);"></div>
+        
+        <!-- Main content -->
+        <div style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; padding: 20px;">
+          <!-- Phone and cards visual -->
+          <div style="position: relative; margin-bottom: 30px;">
+            <div style="position: relative; background: #16a34a; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+              <div style="display: flex; align-items: center; color: white; margin-bottom: 15px;">
+                <div style="width: 30px; height: 30px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                  <span style="color: #16a34a; font-weight: bold; font-size: 18px;">$</span>
+                </div>
+                <span style="font-size: 18px; font-weight: 600;">Cash App</span>
+              </div>
+              <div style="color: white; font-size: 48px; font-weight: bold;">$1000</div>
+              <div style="color: rgba(255,255,255,0.8); font-size: 14px; margin-top: 5px;">GIFT CARD</div>
+            </div>
+          </div>
+          
+          <!-- Program requirements link -->
+          <p style="margin: 0 0 20px 0; color: #6b7280; font-size: 12px; text-align: center;">
+            Subject to completion of <a href="#" style="color: #3b82f6;">Program Requirements</a>
+          </p>
+          
+          <!-- Main heading -->
+          <h1 style="margin: 0 0 10px 0; color: #1f2937; font-size: 32px; font-weight: bold; text-align: center; line-height: 1.2;">
+            Get your <span style="color: #16a34a;">$1000</span><br>
+            CashApp Gift Card
+          </h1>
+          
+          <!-- Question card -->
+          <div style="background: white; border-radius: 15px; padding: 30px; max-width: 500px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin: 20px 0;">
+            <p style="margin: 0 0 20px 0; color: #16a34a; font-size: 16px; font-weight: 600; text-align: center;">
+              Answer question 1 of ${this.questions.length}
+            </p>
+            
+            <h2 style="margin: 0 0 30px 0; color: #1f2937; font-size: 24px; font-weight: bold; text-align: center;">
+              Do you shop online?
+            </h2>
+            
+            <div style="display: flex; gap: 15px;">
+              <button onclick="coregWidget.startQuestionnaire()" 
+                      style="flex: 1; padding: 15px; background: #16a34a; color: white; border: none; border-radius: 25px; font-size: 18px; font-weight: 600; cursor: pointer;">
+                Yes
+              </button>
+              <button onclick="coregWidget.startQuestionnaire()" 
+                      style="flex: 1; padding: 15px; background: #16a34a; color: white; border: none; border-radius: 25px; font-size: 18px; font-weight: 600; cursor: pointer;">
+                No
+              </button>
+            </div>
+          </div>
+          
+          <!-- Reviews section -->
+          <div style="background: white; border-radius: 15px; padding: 25px; max-width: 500px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.1); margin-top: 20px;">
+            <h3 style="margin: 0 0 20px 0; color: #1f2937; font-size: 18px; font-weight: bold; text-align: center;">
+              Reviews
+            </h3>
+            
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+              <div style="width: 40px; height: 40px; background: #16a34a; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
+                <span style="color: white; font-weight: bold;">D</span>
+              </div>
+              <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: #1f2937; font-weight: 600;">Daniel W</span>
+                  <span style="color: #6b7280; font-size: 14px;">11/12</span>
+                </div>
+                <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">
+                  Thank you for support may God Bless you
+                </p>
+              </div>
+            </div>
+            
+            <!-- Review dots -->
+            <div style="display: flex; justify-content: center; gap: 8px; margin-top: 20px;">
+              <div style="width: 8px; height: 8px; background: #d1d5db; border-radius: 50%;"></div>
+              <div style="width: 8px; height: 8px; background: #d1d5db; border-radius: 50%;"></div>
+              <div style="width: 8px; height: 8px; background: #16a34a; border-radius: 50%;"></div>
+              <div style="width: 8px; height: 8px; background: #d1d5db; border-radius: 50%;"></div>
+              <div style="width: 8px; height: 8px; background: #d1d5db; border-radius: 50%;"></div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Close button -->
+        <button onclick="document.getElementById('coreg-widget').remove()" 
+                style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 24px; cursor: pointer; color: white; font-weight: bold;">
+          ×
+        </button>
+      `;
+    }
+
+    startQuestionnaire() {
+      this.showCurrentQuestion();
+    }
+
     showCurrentQuestion() {
       if (this.currentQuestionIndex >= this.questions.length) {
-        this.showAd();
+        this.showEmailCapture();
         return;
       }
 
@@ -252,6 +350,76 @@
       }
     }
 
+    showEmailCapture() {
+      this.container.innerHTML = `
+        <!-- Blue Header -->
+        <div style="position: absolute; top: 0; left: 0; width: 100%; background: #1e3a8a; color: white; text-align: center; padding: 20px 0; font-size: 18px; font-weight: 600;">
+          Almost Done!
+        </div>
+        
+        <!-- Email Capture Card -->
+        <div style="background: white; border-radius: 12px; padding: 40px; max-width: 500px; width: 90%; margin: 0 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+          <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 24px; font-weight: 600; text-align: center; line-height: 1.4;">
+            Enter your email to claim your $1000 CashApp Gift Card
+          </h2>
+          
+          <p style="margin: 0 0 30px 0; color: #6b7280; font-size: 16px; text-align: center;">
+            We'll send you updates about your gift card status and exclusive offers.
+          </p>
+          
+          <form style="margin-bottom: 20px;">
+            <input type="email" id="email-input" placeholder="Enter your email address" 
+                   style="width: 100%; padding: 15px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px; margin-bottom: 20px; outline: none; box-sizing: border-box;" 
+                   onfocus="this.style.borderColor='#3b82f6';" 
+                   onblur="this.style.borderColor='#e5e7eb';">
+            
+            <button type="button" onclick="coregWidget.submitEmail()" 
+                    style="width: 100%; padding: 15px; background: #16a34a; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+              Claim My $1000 Gift Card
+            </button>
+          </form>
+          
+          <div style="text-align: center;">
+            <label style="display: flex; align-items: center; justify-content: center; cursor: pointer; margin-bottom: 15px;">
+              <input type="checkbox" id="email-consent" checked style="margin-right: 8px;">
+              <span style="color: #6b7280; font-size: 14px;">I agree to receive email updates and offers</span>
+            </label>
+            
+            <p style="margin: 0; color: #6b7280; font-size: 12px;">
+              By submitting, you agree to our Terms of Service and Privacy Policy.
+            </p>
+          </div>
+        </div>
+        
+        <!-- Close button -->
+        <button onclick="document.getElementById('coreg-widget').remove()" 
+                style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 24px; cursor: pointer; color: white; font-weight: bold;">
+          ×
+        </button>
+      `;
+    }
+
+    async submitEmail() {
+      const emailInput = this.container.querySelector('#email-input');
+      const email = emailInput.value.trim();
+      
+      if (!email) {
+        alert('Please enter your email address');
+        return;
+      }
+      
+      if (!email.includes('@')) {
+        alert('Please enter a valid email address');
+        return;
+      }
+      
+      // Save email to responses
+      this.userEmail = email;
+      
+      // Show ad after email capture
+      this.showAd();
+    }
+
     async showAd() {
       try {
         // Request ad based on responses
@@ -261,7 +429,8 @@
           questionResponses: this.responses,
           userProfile: {
             device: this.getDeviceType(),
-            state: this.getUserState()
+            state: this.getUserState(),
+            email: this.userEmail
           }
         };
 
