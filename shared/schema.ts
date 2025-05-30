@@ -33,6 +33,7 @@ export const campaigns = pgTable("campaigns", {
   url: text("url").notNull(),
   cpcBid: decimal("cpc_bid", { precision: 10, scale: 2 }).notNull(),
   dailyBudget: decimal("daily_budget", { precision: 10, scale: 2 }),
+  conversionPixels: jsonb("conversion_pixels"), // Array of pixel configurations
   createdAt: timestamp("created_at").defaultNow(),
 });
 

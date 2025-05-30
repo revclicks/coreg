@@ -486,6 +486,16 @@
                     const adData = await response.json();
                     
                     if (adData.campaign) {
+                        // Track impression
+                        await fetch('/api/impressions', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                campaignId: adData.campaign.id,
+                                sessionId: this.sessionId
+                            })
+                        });
+                        
                         this.renderAd(adData.campaign);
                     } else {
                         this.showThankYou();
