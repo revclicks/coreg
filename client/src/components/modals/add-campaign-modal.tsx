@@ -57,7 +57,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
   const [uploadedImage, setUploadedImage] = useState<string | null>(editingCampaign?.imageUrl || null);
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
   const [selectedOS, setSelectedOS] = useState<string[]>([]);
-  const [selectedQuestions, setSelectedQuestions] = useState<number[]>([]);
+  const [selectedQuestions, setSelectedQuestions] = useState<{questionId: number, answer?: string}[]>([]);
   
   // Day parting state
   const [dayPartingMode, setDayPartingMode] = useState<'all-day' | 'custom'>('all-day');
@@ -95,10 +95,12 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
     },
   });
 
-  // EST time labels (UTC-5)
+  // EST time labels in 12-hour format
   const estHours = Array.from({ length: 24 }, (_, i) => {
     const estHour = (i - 5 + 24) % 24;
-    return `${estHour.toString().padStart(2, '0')}:00`;
+    const hour12 = estHour === 0 ? 12 : estHour > 12 ? estHour - 12 : estHour;
+    const ampm = estHour < 12 ? 'AM' : 'PM';
+    return `${hour12}${ampm}`;
   });
 
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
@@ -125,7 +127,10 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
         ...data,
         cpcBid: parseFloat(data.cpcBid),
         targeting: selectedQuestions.length > 0 ? 
-          selectedQuestions.reduce((acc, qId) => ({ ...acc, [`question_${qId}`]: true }), {}) : 
+          selectedQuestions.reduce((acc, item) => ({ 
+            ...acc, 
+            [`question_${item.questionId}${item.answer ? `_${item.answer}` : ''}`]: true 
+          }), {}) : 
           undefined,
         dayParting: dayPartingMode === 'all-day' ? undefined : dayPartingGrid,
         device: selectedDevices.length > 0 ? selectedDevices.join(',') : 'all',
@@ -155,7 +160,10 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
         ...data,
         cpcBid: parseFloat(data.cpcBid),
         targeting: selectedQuestions.length > 0 ? 
-          selectedQuestions.reduce((acc, qId) => ({ ...acc, [`question_${qId}`]: true }), {}) : 
+          selectedQuestions.reduce((acc, item) => ({ 
+            ...acc, 
+            [`question_${item.questionId}${item.answer ? `_${item.answer}` : ''}`]: true 
+          }), {}) : 
           undefined,
         dayParting: dayPartingMode === 'all-day' ? undefined : dayPartingGrid,
         device: selectedDevices.length > 0 ? selectedDevices.join(',') : 'all',
@@ -451,11 +459,11 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
             <FormControl>
               <div className="space-y-4">
                 {uploadedImage ? (
-                  <div className="relative">
+                  <div className="relative max-w-md mx-auto">
                     <img 
                       src={uploadedImage} 
                       alt="Campaign preview" 
-                      className="w-full h-32 object-cover rounded-lg border"
+                      className="w-full h-48 object-contain rounded-lg border bg-gray-50"
                     />
                     <Button
                       type="button"
@@ -644,44 +652,110 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
               </div>
             </div>
             <div className="max-h-96 overflow-y-auto">
-              {questions?.map((question) => (
-                <div key={question.id} className="px-4 py-3 border-b last:border-b-0 hover:bg-gray-50">
-                  <div className="grid grid-cols-12 gap-2 items-center">
-                    <div className="col-span-4">
-                      <div className="font-medium text-sm">{question.text}</div>
-                      <div className="text-xs text-gray-500">
-                        {question.type} • Priority: {question.priority}
+              {questions?.map((question) => {
+                const isSelected = selectedQuestions.some(q => q.questionId === question.id);
+                const selectedAnswers = selectedQuestions.filter(q => q.questionId === question.id);
+                
+                return (
+                  <div key={question.id} className="px-4 py-3 border-b last:border-b-0 hover:bg-gray-50">
+                    <div className="grid grid-cols-12 gap-2 items-start">
+                      <div className="col-span-4">
+                        <div className="font-medium text-sm">{question.text}</div>
+                        <div className="text-xs text-gray-500">
+                          {question.type} • Priority: {question.priority}
+                        </div>
+                      </div>
+                      <div className="col-span-2">
+                        <div className="space-y-1">
+                          {question.type === 'yes_no' ? (
+                            <>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={selectedAnswers.some(a => a.answer === 'yes') ? "default" : "outline"}
+                                onClick={() => {
+                                  const existing = selectedQuestions.filter(q => q.questionId !== question.id || q.answer !== 'yes');
+                                  if (selectedAnswers.some(a => a.answer === 'yes')) {
+                                    setSelectedQuestions(existing);
+                                  } else {
+                                    setSelectedQuestions([...existing, { questionId: question.id, answer: 'yes' }]);
+                                  }
+                                }}
+                                className="h-7 px-2 text-xs w-full"
+                              >
+                                Yes
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={selectedAnswers.some(a => a.answer === 'no') ? "default" : "outline"}
+                                onClick={() => {
+                                  const existing = selectedQuestions.filter(q => q.questionId !== question.id || q.answer !== 'no');
+                                  if (selectedAnswers.some(a => a.answer === 'no')) {
+                                    setSelectedQuestions(existing);
+                                  } else {
+                                    setSelectedQuestions([...existing, { questionId: question.id, answer: 'no' }]);
+                                  }
+                                }}
+                                className="h-7 px-2 text-xs w-full"
+                              >
+                                No
+                              </Button>
+                            </>
+                          ) : question.options && Array.isArray(question.options) ? (
+                            <div className="space-y-1">
+                              {question.options.map((option) => (
+                                <Button
+                                  key={option}
+                                  type="button"
+                                  size="sm"
+                                  variant={selectedAnswers.some(a => a.answer === option) ? "default" : "outline"}
+                                  onClick={() => {
+                                    const existing = selectedQuestions.filter(q => q.questionId !== question.id || q.answer !== option);
+                                    if (selectedAnswers.some(a => a.answer === option)) {
+                                      setSelectedQuestions(existing);
+                                    } else {
+                                      setSelectedQuestions([...existing, { questionId: question.id, answer: option }]);
+                                    }
+                                  }}
+                                  className="h-7 px-2 text-xs w-full text-left justify-start"
+                                >
+                                  {option}
+                                </Button>
+                              ))}
+                            </div>
+                          ) : (
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={isSelected ? "secondary" : "outline"}
+                              onClick={() => {
+                                if (isSelected) {
+                                  setSelectedQuestions(selectedQuestions.filter(q => q.questionId !== question.id));
+                                } else {
+                                  setSelectedQuestions([...selectedQuestions, { questionId: question.id }]);
+                                }
+                              }}
+                              className="h-8 px-3 text-xs"
+                            >
+                              {isSelected ? "Used" : "Use"}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="col-span-4 text-sm text-gray-600">
+                        {question.options && Array.isArray(question.options) 
+                          ? `Options: ${question.options.join(', ')}` 
+                          : 'Yes/No question'
+                        }
+                      </div>
+                      <div className="col-span-2 text-xs font-mono text-gray-500">
+                        {question.id}
                       </div>
                     </div>
-                    <div className="col-span-2">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant={selectedQuestions.includes(question.id) ? "secondary" : "outline"}
-                        onClick={() => {
-                          if (selectedQuestions.includes(question.id)) {
-                            setSelectedQuestions(selectedQuestions.filter(q => q !== question.id));
-                          } else {
-                            setSelectedQuestions([...selectedQuestions, question.id]);
-                          }
-                        }}
-                        className="h-8 px-3 text-xs"
-                      >
-                        {selectedQuestions.includes(question.id) ? "Used" : "Use"}
-                      </Button>
-                    </div>
-                    <div className="col-span-4 text-sm text-gray-600">
-                      {question.options && Array.isArray(question.options) 
-                        ? `Options: ${question.options.join(', ')}` 
-                        : 'Yes/No question'
-                      }
-                    </div>
-                    <div className="col-span-2 text-xs font-mono text-gray-500">
-                      {question.id}
-                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -696,18 +770,23 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
               </p>
             ) : (
               <div className="space-y-2">
-                {selectedQuestions.map((questionId) => {
-                  const question = questions?.find(q => q.id === questionId);
+                {selectedQuestions.map((item, index) => {
+                  const question = questions?.find(q => q.id === item.questionId);
                   return question ? (
-                    <div key={questionId} className="flex items-center justify-between p-2 bg-blue-50 rounded border">
+                    <div key={`${item.questionId}-${item.answer || 'any'}-${index}`} className="flex items-center justify-between p-2 bg-blue-50 rounded border">
                       <div className="text-sm font-medium truncate flex-1 mr-2">
-                        {question.text}
+                        <div>{question.text}</div>
+                        {item.answer && (
+                          <div className="text-xs text-blue-600 mt-1">
+                            Answer: {item.answer}
+                          </div>
+                        )}
                       </div>
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={() => setSelectedQuestions(selectedQuestions.filter(q => q !== questionId))}
+                        onClick={() => setSelectedQuestions(selectedQuestions.filter((_, i) => i !== index))}
                         className="h-6 w-6 p-0"
                       >
                         <X className="h-3 w-3" />
