@@ -151,6 +151,7 @@ export const insertCampaignSchema = createInsertSchema(campaigns).omit({
 
 export const insertSiteSchema = createInsertSchema(sites).omit({
   id: true,
+  siteCode: true, // Auto-generated on server
   createdAt: true,
 });
 
