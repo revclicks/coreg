@@ -9,11 +9,12 @@ export default function Data() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 50;
 
-  // In a real app, you'd fetch actual user interaction data
-  // For now, we'll show the table structure
-  const { data: responses, isLoading } = useQuery({
-    queryKey: ["/api/responses", currentPage],
-    enabled: false, // Disable for now since we need to implement this endpoint
+  const { data: responseData, isLoading } = useQuery({
+    queryKey: ["/api/data-collection", currentPage],
+    queryFn: async () => {
+      const response = await fetch(`/api/data-collection?page=${currentPage}&limit=${pageSize}`);
+      return response.json();
+    },
   });
 
   const handleExportData = () => {

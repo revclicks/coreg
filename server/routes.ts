@@ -484,6 +484,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Data collection endpoint
+  app.get("/api/data-collection", async (req, res) => {
+    try {
+      // Get all question responses with joined data
+      const responses = await db
+        .select({
+          sessionId: questionResponses.sessionId,
+          questionId: questionResponses.questionId,
+          answer: questionResponses.answer,
+          questionText: questions.text,
+          timestamp: userSessions.createdAt,
+          siteName: sites.name
+        })
+        .from(questionResponses)
+        .leftJoin(questions, eq(questionResponses.questionId, questions.id))
+        .leftJoin(userSessions, eq(questionResponses.sessionId, userSessions.sessionId))
+        .leftJoin(sites, eq(userSessions.siteId, sites.id))
+        .orderBy(desc(userSessions.createdAt))
+        .limit(100);
+
+      const formattedResponses = responses.map(response => ({
+        sessionId: response.sessionId,
+        timestamp: response.timestamp?.toISOString() || new Date().toISOString(),
+        site: response.siteName || 'Demo Site',
+        question: response.questionId === 0 ? 'Email Address' : (response.questionText || 'Unknown Question'),
+        answer: response.answer,
+        device: 'Unknown',
+        state: 'Unknown'
+      }));
+
+      res.json({
+        responses: formattedResponses,
+        page: 1,
+        limit: 100,
+        total: formattedResponses.length
+      });
+    } catch (error) {
+      console.error('Error fetching data collection:', error);
+      res.status(500).json({ message: "Failed to fetch data collection" });
+    }
+  });
+
   // Analytics endpoints
   app.get("/api/stats/dashboard", async (req, res) => {
     try {
