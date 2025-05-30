@@ -239,8 +239,15 @@
                 this.sessionId = urlParams.get('session');
                 this.siteCode = urlParams.get('site');
                 
+                console.log('Questionnaire params:', {
+                    email: this.email,
+                    sessionId: this.sessionId,
+                    siteCode: this.siteCode,
+                    fullUrl: window.location.href
+                });
+                
                 if (!this.email || !this.sessionId) {
-                    this.showError('Invalid session. Please start over.');
+                    this.showError(`Invalid session. Missing: ${!this.email ? 'email' : ''} ${!this.sessionId ? 'session' : ''}. Please start over.`);
                     return;
                 }
                 
@@ -275,10 +282,11 @@
                 document.getElementById('yes-no-answers').style.display = 'none';
                 document.getElementById('multiple-choice-answers').style.display = 'none';
                 
-                if (question.type === 'multiple_choice' && question.options && question.options.length > 0) {
+                if (question.type === 'multiple_choice' && question.options && question.options.length > 2) {
+                    // Only show multiple choice for questions with more than 2 options
                     this.showMultipleChoice(question.options);
                 } else {
-                    // Default to Yes/No
+                    // Default to Yes/No for single answer questions
                     document.getElementById('yes-no-answers').style.display = 'flex';
                 }
             }
