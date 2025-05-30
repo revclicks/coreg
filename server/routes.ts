@@ -294,29 +294,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get active campaigns
       const activeCampaigns = await storage.getActiveCampaigns();
+      console.log(`Found ${activeCampaigns.length} active campaigns`);
       
       // Filter campaigns by site vertical exclusions
       const eligibleCampaigns = activeCampaigns.filter(campaign => {
         const excludedVerticals = site.excludedVerticals as string[] || [];
         return !excludedVerticals.includes(campaign.vertical);
       });
+      console.log(`${eligibleCampaigns.length} campaigns eligible after vertical filtering`);
 
       // Apply targeting logic (prioritize specific targeting over broad)
       const targetedCampaigns = eligibleCampaigns.filter(campaign => {
         const targeting = campaign.targeting as any || {};
+        console.log(`Campaign ${campaign.id} targeting:`, targeting);
+        
+        // Check day parting if configured
+        if (targeting.dayParting && Array.isArray(targeting.dayParting)) {
+          const now = new Date();
+          const currentDay = now.getDay(); // 0 = Sunday
+          const currentHour = now.getHours();
+          
+          const dayPart = targeting.dayParting.find((dp: any) => dp.day === currentDay);
+          if (dayPart && Array.isArray(dayPart.hours)) {
+            const isActiveHour = dayPart.hours[currentHour];
+            if (!isActiveHour) {
+              console.log(`Campaign ${campaign.id} excluded by day parting`);
+              return false;
+            }
+          }
+        }
         
         // Check if campaign has specific question targeting
-        const hasSpecificTargeting = Object.keys(targeting).some(key => targeting[key] === true);
+        const hasSpecificTargeting = Object.keys(targeting).some(key => 
+          key.startsWith('question_') && targeting[key] === true
+        );
         
         if (hasSpecificTargeting) {
           // Check if user responses match targeting
-          return questionResponses.some((response: any) => {
-            return targeting[`question_${response.questionId}`] === true;
+          const matches = questionResponses.some((response: any) => {
+            const targetingKey = `question_${response.questionId}`;
+            const hasTargeting = targeting[targetingKey] === true;
+            console.log(`Checking question ${response.questionId}: targeting=${hasTargeting}, answer=${response.answer}`);
+            
+            // If campaign targets this question, check if answer matches
+            if (hasTargeting) {
+              const answerKey = `question_${response.questionId}_${response.answer}`;
+              const answerMatches = targeting[answerKey] === true;
+              console.log(`Answer targeting for ${answerKey}: ${answerMatches}`);
+              return answerMatches || targeting[targetingKey] === true; // Match if answer-specific or general question targeting
+            }
+            return false;
           });
+          console.log(`Campaign ${campaign.id} question targeting result:`, matches);
+          return matches;
         }
         
+        console.log(`Campaign ${campaign.id} has broad targeting`);
         return true; // Broad targeting campaign
       });
+
+      console.log(`${targetedCampaigns.length} campaigns after targeting filtering`);
 
       // Sort by CPC bid (highest first)
       targetedCampaigns.sort((a, b) => Number(b.cpcBid) - Number(a.cpcBid));
@@ -324,9 +361,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const selectedCampaign = targetedCampaigns[0];
       
       if (!selectedCampaign) {
+        console.log('No campaign selected');
         res.json({ campaign: null });
         return;
       }
+
+      console.log(`Selected campaign: ${selectedCampaign.id} - ${selectedCampaign.name}`);
 
       // Generate click ID and build URL
       const clickId = nanoid(16);
