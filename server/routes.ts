@@ -7,9 +7,46 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { nanoid } from "nanoid";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Widget script serving
+  app.get("/sites/:siteCode.js", async (req, res) => {
+    try {
+      const { siteCode } = req.params;
+      
+      // Verify site exists
+      const site = await storage.getSiteByCode(siteCode);
+      if (!site) {
+        res.status(404).send("// Site not found");
+        return;
+      }
+
+      // Read and serve the widget script
+      const widgetScript = readFileSync(join(process.cwd(), "public", "widget.js"), "utf8");
+      
+      res.setHeader("Content-Type", "application/javascript");
+      res.setHeader("Cache-Control", "public, max-age=3600"); // Cache for 1 hour
+      res.send(widgetScript);
+    } catch (error) {
+      console.error("Error serving widget script:", error);
+      res.status(500).send("// Error loading widget");
+    }
+  });
+
+  // Test page serving
+  app.get("/test", (req, res) => {
+    try {
+      const testPage = readFileSync(join(process.cwd(), "public", "test.html"), "utf8");
+      res.setHeader("Content-Type", "text/html");
+      res.send(testPage);
+    } catch (error) {
+      res.status(500).send("Error loading test page");
+    }
+  });
+
   // Questions endpoints
   app.get("/api/questions", async (req, res) => {
     try {
