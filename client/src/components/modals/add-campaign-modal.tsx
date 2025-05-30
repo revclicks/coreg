@@ -85,20 +85,75 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: editingCampaign?.name || "",
-      vertical: editingCampaign?.vertical || "",
-      ageMin: editingCampaign?.ageMin || undefined,
-      ageMax: editingCampaign?.ageMax || undefined,
-      gender: editingCampaign?.gender || "all",
-      device: editingCampaign?.device || "all",
-      states: editingCampaign?.states || "",
-      cpcBid: editingCampaign?.cpcBid?.toString() || "0.00",
-      imageUrl: editingCampaign?.imageUrl || "",
-      url: editingCampaign?.url || "",
-      active: editingCampaign?.active ?? true,
-      frequency: editingCampaign?.frequency || 1,
+      name: "",
+      vertical: "",
+      ageMin: undefined,
+      ageMax: undefined,
+      gender: "all",
+      device: "all",
+      states: "",
+      cpcBid: "0.00",
+      imageUrl: "",
+      url: "",
+      active: true,
+      frequency: 1,
     },
   });
+
+  // Reset form when editing campaign changes
+  useEffect(() => {
+    if (editingCampaign) {
+      form.reset({
+        name: editingCampaign.name,
+        vertical: editingCampaign.vertical,
+        ageMin: editingCampaign.ageMin || undefined,
+        ageMax: editingCampaign.ageMax || undefined,
+        gender: editingCampaign.gender || "all",
+        device: editingCampaign.device || "all",
+        states: editingCampaign.states || "",
+        cpcBid: editingCampaign.cpcBid?.toString() || "0.00",
+        imageUrl: editingCampaign.imageUrl || "",
+        url: editingCampaign.url || "",
+        active: editingCampaign.active ?? true,
+        frequency: editingCampaign.frequency || 1,
+      });
+
+      // Reset campaign-specific state
+      const targeting = editingCampaign.targeting as any || {};
+      const existingQuestions: { questionId: number; answer?: string }[] = [];
+      
+      Object.keys(targeting).forEach(key => {
+        if (key.startsWith('question_') && targeting[key] === true && key !== 'logic') {
+          const parts = key.split('_');
+          if (parts.length >= 2) {
+            const questionId = parseInt(parts[1]);
+            const answer = parts.length > 2 ? parts[2] : undefined;
+            existingQuestions.push({ questionId, answer });
+          }
+        }
+      });
+      
+      setSelectedQuestions(existingQuestions);
+      setTargetingLogic(targeting.logic || 'OR');
+    } else {
+      form.reset({
+        name: "",
+        vertical: "",
+        ageMin: undefined,
+        ageMax: undefined,
+        gender: "all",
+        device: "all",
+        states: "",
+        cpcBid: "0.00",
+        imageUrl: "",
+        url: "",
+        active: true,
+        frequency: 1,
+      });
+      setSelectedQuestions([]);
+      setTargetingLogic('OR');
+    }
+  }, [editingCampaign, form]);
 
   // EST time labels in 12-hour format starting at 12AM
   const estHours = Array.from({ length: 24 }, (_, i) => {

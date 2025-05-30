@@ -363,10 +363,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
           console.log(`Campaign ${campaign.id} question targeting result:`, matches);
           return matches;
+        } else {
+          console.log(`Campaign ${campaign.id} has broad targeting (no specific question targeting)`);
+          return true; // Campaign without specific targeting matches all users
         }
-        
-        console.log(`Campaign ${campaign.id} has broad targeting`);
-        return true; // Broad targeting campaign
       });
 
       console.log(`${targetedCampaigns.length} campaigns after targeting filtering`);
