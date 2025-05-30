@@ -29,8 +29,20 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { insertCampaignSchema, type Campaign, type Question } from "@shared/schema";
 
-// Enhanced form schema for the campaign modal
-const formSchema = insertCampaignSchema.extend({
+// Form schema based on the actual database schema
+const formSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  vertical: z.string().min(1, "Vertical is required"),
+  ageMin: z.number().optional(),
+  ageMax: z.number().optional(),
+  gender: z.string().optional(),
+  device: z.string().optional(),
+  states: z.string().optional(),
+  cpcBid: z.string().min(1, "CPC bid is required"),
+  imageUrl: z.string().optional(),
+  url: z.string().min(1, "URL is required"),
+  active: z.boolean(),
+  frequency: z.number().default(1),
   targeting: z.record(z.boolean()).optional(),
   dayParting: z.record(z.array(z.boolean())).optional(),
 });
@@ -66,16 +78,14 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
       vertical: editingCampaign?.vertical || "",
       ageMin: editingCampaign?.ageMin || undefined,
       ageMax: editingCampaign?.ageMax || undefined,
-      gender: editingCampaign?.gender || "all",
-      device: editingCampaign?.device || "all",
+      gender: editingCampaign?.gender || "",
+      device: editingCampaign?.device || "",
       states: editingCampaign?.states || "",
-      cpcBid: editingCampaign?.cpcBid || 0,
-      dailyBudget: editingCampaign?.dailyBudget || 0,
-      totalBudget: editingCampaign?.totalBudget || 0,
+      cpcBid: editingCampaign?.cpcBid?.toString() || "0.00",
       imageUrl: editingCampaign?.imageUrl || "",
       url: editingCampaign?.url || "",
-      isActive: editingCampaign?.isActive ?? true,
-      priority: editingCampaign?.priority || 1,
+      active: editingCampaign?.active ?? true,
+      frequency: editingCampaign?.frequency || 1,
       targeting: {},
       dayParting: dayPartingGrid,
     },
@@ -83,7 +93,12 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
 
   const createMutation = useMutation({
     mutationFn: (data: z.infer<typeof formSchema>) => {
-      return apiRequest("/api/campaigns", "POST", data);
+      const formData = {
+        ...data,
+        cpcBid: parseFloat(data.cpcBid),
+        dayParting: dayPartingMode === 'all-day' ? undefined : dayPartingGrid,
+      };
+      return apiRequest("/api/campaigns", "POST", formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
@@ -102,7 +117,12 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
 
   const updateMutation = useMutation({
     mutationFn: (data: z.infer<typeof formSchema>) => {
-      return apiRequest(`/api/campaigns/${editingCampaign!.id}`, "PATCH", data);
+      const formData = {
+        ...data,
+        cpcBid: parseFloat(data.cpcBid),
+        dayParting: dayPartingMode === 'all-day' ? undefined : dayPartingGrid,
+      };
+      return apiRequest(`/api/campaigns/${editingCampaign!.id}`, "PATCH", formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
@@ -119,16 +139,10 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    // Include day parting data
-    const formData = {
-      ...data,
-      dayParting: dayPartingMode === 'all-day' ? null : dayPartingGrid,
-    };
-
     if (editingCampaign) {
-      updateMutation.mutate(formData);
+      updateMutation.mutate(data);
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(data);
     }
   };
 
@@ -219,7 +233,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                       <Input
                         type="number"
                         placeholder="18"
-                        {...field}
+                        value={field.value || ""}
                         onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                       />
                     </FormControl>
@@ -238,7 +252,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                       <Input
                         type="number"
                         placeholder="65"
-                        {...field}
+                        value={field.value || ""}
                         onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                       />
                     </FormControl>
@@ -253,14 +267,14 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Gender</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select gender" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="all">All Genders</SelectItem>
+                        <SelectItem value="">All Genders</SelectItem>
                         <SelectItem value="male">Male</SelectItem>
                         <SelectItem value="female">Female</SelectItem>
                       </SelectContent>
@@ -276,14 +290,14 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Operating System</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value || ""}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select OS" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="all">All Operating Systems</SelectItem>
+                        <SelectItem value="">All Operating Systems</SelectItem>
                         <SelectItem value="ios">iOS</SelectItem>
                         <SelectItem value="android">Android</SelectItem>
                         <SelectItem value="windows">Windows</SelectItem>
@@ -307,7 +321,6 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                     <Input
                       placeholder="Enter states (e.g., CA, NY, TX) or leave blank for all states"
                       {...field}
-                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormMessage />
@@ -315,7 +328,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
               )}
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="cpcBid"
@@ -337,35 +350,16 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
 
               <FormField
                 control={form.control}
-                name="dailyBudget"
+                name="frequency"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Daily Budget ($)</FormLabel>
+                    <FormLabel>Frequency Cap</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="totalBudget"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Total Budget ($)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        {...field}
+                        placeholder="1"
+                        value={field.value || ""}
+                        onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : 1)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -478,7 +472,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                         const targeting = form.getValues("targeting") || {};
                         form.setValue("targeting", {
                           ...targeting,
-                          [`question_${question.id}`]: checked,
+                          [`question_${question.id}`]: !!checked,
                         });
                       }}
                     />
@@ -568,7 +562,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
             <div className="flex items-center space-x-4">
               <FormField
                 control={form.control}
-                name="isActive"
+                name="active"
                 render={({ field }) => (
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">

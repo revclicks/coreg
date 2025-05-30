@@ -6,7 +6,6 @@ const navigation = [
   { name: "Question Manager", href: "/questions", icon: HelpCircle },
   { name: "Campaign Manager", href: "/campaigns", icon: Megaphone },
   { name: "Site Manager", href: "/sites", icon: Globe },
-  { name: "Question Targeting", href: "/targeting", icon: Target },
   { name: "Stats & Analytics", href: "/stats", icon: ChartBar },
   { name: "Data Collection", href: "/data", icon: Database },
 ];
