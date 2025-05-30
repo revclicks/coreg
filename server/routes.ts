@@ -47,6 +47,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New test page serving
+  app.get("/testnew", (req, res) => {
+    try {
+      const testPage = readFileSync(join(process.cwd(), "public", "testnew.html"), "utf8");
+      res.setHeader("Content-Type", "text/html");
+      res.send(testPage);
+    } catch (error) {
+      res.status(500).send("Error loading test page");
+    }
+  });
+
+  // Direct widget script serving
+  app.get("/widget.js", (req, res) => {
+    try {
+      const widgetScript = readFileSync(join(process.cwd(), "public", "widget.js"), "utf8");
+      res.setHeader("Content-Type", "application/javascript");
+      res.setHeader("Cache-Control", "no-cache"); // No cache for development
+      res.send(widgetScript);
+    } catch (error) {
+      console.error("Error serving widget script:", error);
+      res.status(500).send("// Error loading widget");
+    }
+  });
+
   // Questions endpoints
   app.get("/api/questions", async (req, res) => {
     try {
