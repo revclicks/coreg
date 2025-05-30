@@ -507,8 +507,9 @@
             }
 
             renderAd(campaign) {
-                // Store campaign ID for click tracking
+                // Store campaign ID and pixels for click tracking
                 this.currentCampaignId = campaign.id;
+                this.currentCampaignPixels = campaign.conversionPixels || [];
                 
                 // Update the header
                 document.querySelector('.header').textContent = 'Special Offer';

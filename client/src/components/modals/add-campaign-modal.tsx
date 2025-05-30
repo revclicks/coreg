@@ -245,6 +245,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
         dayParting: dayPartingMode === 'all-day' ? undefined : dayPartingGrid,
         device: deviceTargeting === 'all' ? 'all' : selectedDevices.join(','),
         operatingSystem: osTargeting === 'all' ? 'all' : selectedOS.join(','),
+        conversionPixels: conversionPixels,
       };
       return apiRequest(`/api/campaigns/${editingCampaign!.id}`, "PATCH", formData);
     },
@@ -781,6 +782,20 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
           </FormItem>
         )}
       />
+
+      <div className="space-y-4">
+        <div>
+          <h3 className="text-lg font-medium">Conversion Tracking Pixels</h3>
+          <p className="text-sm text-muted-foreground">
+            Add third-party tracking pixels to monitor conversions across different platforms
+          </p>
+        </div>
+        
+        <ConversionPixelManager
+          pixels={conversionPixels}
+          onChange={setConversionPixels}
+        />
+      </div>
     </div>
   );
 
