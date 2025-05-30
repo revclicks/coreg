@@ -330,10 +330,18 @@
                 this.currentQuestionIndex++;
                 this.selectedChoice = null;
                 
+                // Show loading state briefly
+                document.getElementById('question-content').style.display = 'none';
+                document.getElementById('loading-state').style.display = 'block';
+                document.getElementById('loading-state').innerHTML = `
+                    <div class="loading-spinner"></div>
+                    Loading next question...
+                `;
+                
                 // Small delay for better UX
                 setTimeout(() => {
                     this.showCurrentQuestion();
-                }, 300);
+                }, 800);
             }
             
             async saveResponse(response) {
