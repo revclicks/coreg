@@ -79,6 +79,14 @@ export const campaignClicks = pgTable("campaign_clicks", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
+// Campaign impressions table
+export const campaignImpressions = pgTable("campaign_impressions", {
+  id: serial("id").primaryKey(),
+  campaignId: integer("campaign_id").references(() => campaigns.id),
+  sessionId: text("session_id").references(() => userSessions.sessionId),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
 // Campaign conversions table
 export const campaignConversions = pgTable("campaign_conversions", {
   id: serial("id").primaryKey(),
@@ -94,6 +102,7 @@ export const questionsRelations = relations(questions, ({ many }) => ({
 
 export const campaignsRelations = relations(campaigns, ({ many }) => ({
   clicks: many(campaignClicks),
+  impressions: many(campaignImpressions),
 }));
 
 export const sitesRelations = relations(sites, ({ many }) => ({
@@ -130,6 +139,17 @@ export const campaignClicksRelations = relations(campaignClicks, ({ one, many })
     references: [campaigns.id],
   }),
   conversions: many(campaignConversions),
+}));
+
+export const campaignImpressionsRelations = relations(campaignImpressions, ({ one }) => ({
+  campaign: one(campaigns, {
+    fields: [campaignImpressions.campaignId],
+    references: [campaigns.id],
+  }),
+  session: one(userSessions, {
+    fields: [campaignImpressions.sessionId],
+    references: [userSessions.sessionId],
+  }),
 }));
 
 export const campaignConversionsRelations = relations(campaignConversions, ({ one }) => ({
@@ -171,6 +191,11 @@ export const insertCampaignClickSchema = createInsertSchema(campaignClicks).omit
   timestamp: true,
 });
 
+export const insertCampaignImpressionSchema = createInsertSchema(campaignImpressions).omit({
+  id: true,
+  timestamp: true,
+});
+
 export const insertCampaignConversionSchema = createInsertSchema(campaignConversions).omit({
   id: true,
   timestamp: true,
@@ -194,6 +219,9 @@ export type InsertQuestionResponse = z.infer<typeof insertQuestionResponseSchema
 
 export type CampaignClick = typeof campaignClicks.$inferSelect;
 export type InsertCampaignClick = z.infer<typeof insertCampaignClickSchema>;
+
+export type CampaignImpression = typeof campaignImpressions.$inferSelect;
+export type InsertCampaignImpression = z.infer<typeof insertCampaignImpressionSchema>;
 
 export type CampaignConversion = typeof campaignConversions.$inferSelect;
 export type InsertCampaignConversion = z.infer<typeof insertCampaignConversionSchema>;
