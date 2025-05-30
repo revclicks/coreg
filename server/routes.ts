@@ -47,6 +47,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dynamic test page with site code
+  app.get("/test/:siteCode", (req, res) => {
+    try {
+      const { siteCode } = req.params;
+      let testPage = readFileSync(join(process.cwd(), "public", "test.html"), "utf8");
+      
+      // Replace the hardcoded site code with the dynamic one
+      testPage = testPage.replace(/data-site="[^"]*"/g, `data-site="${siteCode}"`);
+      testPage = testPage.replace(/siteCode = '[^']*'/g, `siteCode = '${siteCode}'`);
+      testPage = testPage.replace(/window\.siteCode = '[^']*'/g, `window.siteCode = '${siteCode}'`);
+      
+      res.setHeader("Content-Type", "text/html");
+      res.send(testPage);
+    } catch (error) {
+      res.status(500).send("Error loading test page");
+    }
+  });
+
   // New test page serving
   app.get("/testnew", (req, res) => {
     try {
