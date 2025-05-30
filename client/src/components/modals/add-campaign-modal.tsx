@@ -55,7 +55,9 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
   const [uploadedImage, setUploadedImage] = useState<string | null>(editingCampaign?.imageUrl || null);
+  const [deviceTargeting, setDeviceTargeting] = useState<'all' | 'specific'>('all');
   const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
+  const [osTargeting, setOSTargeting] = useState<'all' | 'specific'>('all');
   const [selectedOS, setSelectedOS] = useState<string[]>([]);
   const [selectedQuestions, setSelectedQuestions] = useState<{questionId: number, answer?: string}[]>([]);
   const [targetingLogic, setTargetingLogic] = useState<'AND' | 'OR'>('AND');
@@ -133,8 +135,8 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
           }), { logic: targetingLogic }) : 
           undefined,
         dayParting: dayPartingMode === 'all-day' ? undefined : dayPartingGrid,
-        device: selectedDevices.length > 0 ? selectedDevices.join(',') : 'all',
-        operatingSystem: selectedOS.length > 0 ? selectedOS.join(',') : 'all',
+        device: deviceTargeting === 'all' ? 'all' : selectedDevices.join(','),
+        operatingSystem: osTargeting === 'all' ? 'all' : selectedOS.join(','),
       };
       return apiRequest("/api/campaigns", "POST", formData);
     },
@@ -166,8 +168,8 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
           }), { logic: targetingLogic }) : 
           undefined,
         dayParting: dayPartingMode === 'all-day' ? undefined : dayPartingGrid,
-        device: selectedDevices.length > 0 ? selectedDevices.join(',') : 'all',
-        operatingSystem: selectedOS.length > 0 ? selectedOS.join(',') : 'all',
+        device: deviceTargeting === 'all' ? 'all' : selectedDevices.join(','),
+        operatingSystem: osTargeting === 'all' ? 'all' : selectedOS.join(','),
       };
       return apiRequest(`/api/campaigns/${editingCampaign!.id}`, "PATCH", formData);
     },
@@ -345,25 +347,53 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
       <div>
         <FormLabel className="text-base">Device Targeting</FormLabel>
         <p className="text-sm text-muted-foreground mb-3">Select device types to target</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {deviceOptions.map((device) => (
-            <div key={device.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={`device-${device.id}`}
-                checked={selectedDevices.includes(device.id)}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    setSelectedDevices([...selectedDevices, device.id]);
-                  } else {
-                    setSelectedDevices(selectedDevices.filter(d => d !== device.id));
-                  }
-                }}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <input
+                type="radio"
+                id="device-all"
+                name="device-targeting"
+                checked={deviceTargeting === 'all'}
+                onChange={() => setDeviceTargeting('all')}
+                className="w-4 h-4"
               />
-              <label htmlFor={`device-${device.id}`} className="text-sm cursor-pointer">
-                {device.label}
-              </label>
+              <label htmlFor="device-all" className="text-sm">All Devices</label>
             </div>
-          ))}
+            <div className="flex items-center space-x-2">
+              <input
+                type="radio"
+                id="device-specific"
+                name="device-targeting"
+                checked={deviceTargeting === 'specific'}
+                onChange={() => setDeviceTargeting('specific')}
+                className="w-4 h-4"
+              />
+              <label htmlFor="device-specific" className="text-sm">Specific Devices</label>
+            </div>
+          </div>
+          {deviceTargeting === 'specific' && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pl-6">
+              {deviceOptions.map((device) => (
+                <div key={device.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`device-${device.id}`}
+                    checked={selectedDevices.includes(device.id)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedDevices([...selectedDevices, device.id]);
+                      } else {
+                        setSelectedDevices(selectedDevices.filter(d => d !== device.id));
+                      }
+                    }}
+                  />
+                  <label htmlFor={`device-${device.id}`} className="text-sm cursor-pointer">
+                    {device.label}
+                  </label>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -371,25 +401,53 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
       <div>
         <FormLabel className="text-base">Operating System Targeting</FormLabel>
         <p className="text-sm text-muted-foreground mb-3">Select operating systems to target</p>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {osOptions.map((os) => (
-            <div key={os.id} className="flex items-center space-x-2">
-              <Checkbox
-                id={`os-${os.id}`}
-                checked={selectedOS.includes(os.id)}
-                onCheckedChange={(checked) => {
-                  if (checked) {
-                    setSelectedOS([...selectedOS, os.id]);
-                  } else {
-                    setSelectedOS(selectedOS.filter(o => o !== os.id));
-                  }
-                }}
+        <div className="space-y-3">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <input
+                type="radio"
+                id="os-all"
+                name="os-targeting"
+                checked={osTargeting === 'all'}
+                onChange={() => setOSTargeting('all')}
+                className="w-4 h-4"
               />
-              <label htmlFor={`os-${os.id}`} className="text-sm cursor-pointer">
-                {os.label}
-              </label>
+              <label htmlFor="os-all" className="text-sm">All Operating Systems</label>
             </div>
-          ))}
+            <div className="flex items-center space-x-2">
+              <input
+                type="radio"
+                id="os-specific"
+                name="os-targeting"
+                checked={osTargeting === 'specific'}
+                onChange={() => setOSTargeting('specific')}
+                className="w-4 h-4"
+              />
+              <label htmlFor="os-specific" className="text-sm">Specific Operating Systems</label>
+            </div>
+          </div>
+          {osTargeting === 'specific' && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pl-6">
+              {osOptions.map((os) => (
+                <div key={os.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`os-${os.id}`}
+                    checked={selectedOS.includes(os.id)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedOS([...selectedOS, os.id]);
+                      } else {
+                        setSelectedOS(selectedOS.filter(o => o !== os.id));
+                      }
+                    }}
+                  />
+                  <label htmlFor={`os-${os.id}`} className="text-sm cursor-pointer">
+                    {os.label}
+                  </label>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -479,37 +537,37 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                     </Button>
                   </div>
                 ) : (
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                    <div className="mt-4">
-                      <label htmlFor="image-upload" className="cursor-pointer">
+                  <label htmlFor="image-upload" className="cursor-pointer block">
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                      <div className="mt-4">
                         <span className="mt-2 block text-sm font-medium text-gray-900">
                           Upload campaign image
                         </span>
                         <span className="mt-1 block text-sm text-gray-500">
                           PNG, JPG, GIF up to 10MB
                         </span>
-                      </label>
-                      <input
-                        id="image-upload"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                              const result = e.target?.result as string;
-                              setUploadedImage(result);
-                              field.onChange(result);
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
+                      </div>
                     </div>
-                  </div>
+                    <input
+                      id="image-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (e) => {
+                            const result = e.target?.result as string;
+                            setUploadedImage(result);
+                            field.onChange(result);
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
                 )}
               </div>
             </FormControl>
