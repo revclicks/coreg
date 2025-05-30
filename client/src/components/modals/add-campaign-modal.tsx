@@ -78,8 +78,8 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
       vertical: editingCampaign?.vertical || "",
       ageMin: editingCampaign?.ageMin || undefined,
       ageMax: editingCampaign?.ageMax || undefined,
-      gender: editingCampaign?.gender || "",
-      device: editingCampaign?.device || "",
+      gender: editingCampaign?.gender || "all",
+      device: editingCampaign?.device || "all",
       states: editingCampaign?.states || "",
       cpcBid: editingCampaign?.cpcBid?.toString() || "0.00",
       imageUrl: editingCampaign?.imageUrl || "",
@@ -274,7 +274,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">All Genders</SelectItem>
+                        <SelectItem value="all">All Genders</SelectItem>
                         <SelectItem value="male">Male</SelectItem>
                         <SelectItem value="female">Female</SelectItem>
                       </SelectContent>
@@ -297,7 +297,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">All Operating Systems</SelectItem>
+                        <SelectItem value="all">All Operating Systems</SelectItem>
                         <SelectItem value="ios">iOS</SelectItem>
                         <SelectItem value="android">Android</SelectItem>
                         <SelectItem value="windows">Windows</SelectItem>
