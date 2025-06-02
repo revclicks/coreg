@@ -14,6 +14,7 @@ import Data from "@/pages/data";
 import AudienceSegments from "@/pages/audience-segments";
 import ABTesting from "@/pages/ab-testing";
 import Targeting from "@/pages/targeting";
+import RTBManager from "@/pages/rtb-manager";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import NotFound from "@/pages/not-found";
@@ -38,6 +39,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/questions" component={Questions} />
       <Route path="/campaigns" component={Campaigns} />
+      <Route path="/rtb-manager" component={RTBManager} />
       <Route path="/sites" component={Sites} />
       <Route path="/targeting" component={Targeting} />
       <Route path="/stats" component={Stats} />
