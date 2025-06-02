@@ -184,7 +184,7 @@ export default function Questions() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Priority</TableHead>
+                  <TableHead>Current Priority</TableHead>
                   <TableHead>Question</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Performance Metrics</TableHead>
@@ -197,15 +197,25 @@ export default function Questions() {
                 {(optimizationMode === 'auto' ? optimizedQuestions : questions)?.map((question: any) => (
                   <TableRow key={question.id}>
                     <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Badge className={getPriorityColor(question.priority)}>
-                          {question.priority}
-                        </Badge>
-                        {question.manualPriority && (
-                          <Badge variant="outline" className="text-xs">
-                            Manual: {question.manualPriority}
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <Badge className={getPriorityColor(question.manualPriority || question.priority)}>
+                            {question.manualPriority || question.priority}
                           </Badge>
-                        )}
+                          {question.manualPriority && (
+                            <Badge variant="outline" className="text-xs">
+                              Manual
+                            </Badge>
+                          )}
+                          {question.autoOptimize && !question.manualPriority && (
+                            <Badge variant="outline" className="text-xs text-blue-600">
+                              Auto
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {question.manualPriority ? `Override: ${question.manualPriority}` : `Base: ${question.priority}`}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell className="font-medium max-w-xs truncate">{question.text}</TableCell>
@@ -230,41 +240,65 @@ export default function Questions() {
                             {Number(question.impressions) || 0}
                           </span>
                         </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">Data Age:</span>
+                          <span className="font-medium text-slate-500">
+                            {question.createdAt ? 
+                              Math.floor((new Date().getTime() - new Date(question.createdAt).getTime()) / (1000 * 60 * 60 * 24)) + 'd' 
+                              : 'New'}
+                          </span>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="space-y-2">
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            checked={question.autoOptimize}
-                            onCheckedChange={(checked) => {
-                              updatePriorityMutation.mutate({
-                                questionId: question.id,
-                                priority: question.priority,
-                                manualPriority: checked ? null : question.priority
-                              });
-                            }}
-                          />
-                          <span className="text-xs text-slate-600">Auto-optimize</span>
-                        </div>
-                        {!question.autoOptimize && (
-                          <Input
-                            type="number"
-                            placeholder="Manual priority"
-                            className="w-20 h-8 text-xs"
-                            defaultValue={question.manualPriority || ''}
-                            onBlur={(e) => {
-                              const value = parseInt(e.target.value);
-                              if (value && value !== question.manualPriority) {
-                                updatePriorityMutation.mutate({
-                                  questionId: question.id,
-                                  priority: question.priority,
-                                  manualPriority: value
-                                });
-                              }
-                            }}
-                          />
-                        )}
+                        {(() => {
+                          const daysSinceCreation = question.createdAt ? 
+                            Math.floor((new Date().getTime() - new Date(question.createdAt).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+                          const hasWeekOfData = daysSinceCreation >= 7;
+                          
+                          return (
+                            <>
+                              <div className="flex items-center space-x-2">
+                                <Switch
+                                  checked={question.autoOptimize && hasWeekOfData}
+                                  disabled={!hasWeekOfData}
+                                  onCheckedChange={(checked) => {
+                                    updatePriorityMutation.mutate({
+                                      questionId: question.id,
+                                      priority: question.priority,
+                                      manualPriority: checked ? null : question.priority
+                                    });
+                                  }}
+                                />
+                                <span className="text-xs text-slate-600">Auto-optimize</span>
+                              </div>
+                              {!hasWeekOfData && (
+                                <div className="text-xs text-amber-600">
+                                  Need 7+ days of data ({7 - daysSinceCreation} days remaining)
+                                </div>
+                              )}
+                              {(!question.autoOptimize || !hasWeekOfData) && (
+                                <Input
+                                  type="number"
+                                  placeholder="Manual priority"
+                                  className="w-20 h-8 text-xs"
+                                  defaultValue={question.manualPriority || ''}
+                                  onBlur={(e) => {
+                                    const value = parseInt(e.target.value);
+                                    if (value && value !== question.manualPriority) {
+                                      updatePriorityMutation.mutate({
+                                        questionId: question.id,
+                                        priority: question.priority,
+                                        manualPriority: value
+                                      });
+                                    }
+                                  }}
+                                />
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </TableCell>
                     <TableCell>
