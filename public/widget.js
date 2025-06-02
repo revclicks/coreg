@@ -413,25 +413,200 @@
         return;
       }
       
-      // Save email to database
+      // Store email for later use
+      this.userEmail = email;
+      
+      // Show personal information collection form
+      this.showPersonalInfoForm();
+    }
+
+    showPersonalInfoForm() {
+      this.container.innerHTML = `
+        <!-- Blue Header -->
+        <div style="position: absolute; top: 0; left: 0; width: 100%; background: #1e3a8a; color: white; text-align: center; padding: 20px 0; font-size: 18px; font-weight: 600;">
+          Hey Hey! Your Email Is Eligible.
+        </div>
+        
+        <!-- Personal Info Form -->
+        <div style="background: white; border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; margin: 0 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); max-height: 80vh; overflow-y: auto;">
+          <form id="personal-info-form">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+              <div>
+                <input type="text" id="first-name" placeholder="First Name" required
+                       style="width: 100%; padding: 15px; border: 2px solid #e5e7eb; border-radius: 25px; font-size: 16px; outline: none; box-sizing: border-box;"
+                       onfocus="this.style.borderColor='#3b82f6';" onblur="this.style.borderColor='#e5e7eb';">
+              </div>
+              <div>
+                <input type="text" id="last-name" placeholder="Last Name" required
+                       style="width: 100%; padding: 15px; border: 2px solid #e5e7eb; border-radius: 25px; font-size: 16px; outline: none; box-sizing: border-box;"
+                       onfocus="this.style.borderColor='#3b82f6';" onblur="this.style.borderColor='#e5e7eb';">
+              </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px; margin-bottom: 15px;">
+              <div>
+                <input type="text" id="street-address" placeholder="Street Address" required
+                       style="width: 100%; padding: 15px; border: 2px solid #e5e7eb; border-radius: 25px; font-size: 16px; outline: none; box-sizing: border-box;"
+                       onfocus="this.style.borderColor='#3b82f6';" onblur="this.style.borderColor='#e5e7eb';">
+              </div>
+              <div>
+                <input type="text" id="zip-code" placeholder="Zip Code" required
+                       style="width: 100%; padding: 15px; border: 2px solid #e5e7eb; border-radius: 25px; font-size: 16px; outline: none; box-sizing: border-box;"
+                       onfocus="this.style.borderColor='#3b82f6';" onblur="this.style.borderColor='#e5e7eb';">
+              </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+              <div>
+                <button type="button" id="gender-female" onclick="coregWidget.selectGender('female')"
+                        style="width: 100%; padding: 15px; border: 2px solid #9ca3af; border-radius: 25px; font-size: 16px; background: #f3f4f6; color: #6b7280; cursor: pointer; transition: all 0.2s;">
+                  FEMALE
+                </button>
+              </div>
+              <div>
+                <button type="button" id="gender-male" onclick="coregWidget.selectGender('male')"
+                        style="width: 100%; padding: 15px; border: 2px solid #22c55e; border-radius: 25px; font-size: 16px; background: #22c55e; color: white; cursor: pointer; transition: all 0.2s;">
+                  MALE
+                </button>
+              </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+              <div>
+                <input type="text" id="date-of-birth" placeholder="Date Of Birth (mm-dd-yyyy)" required
+                       style="width: 100%; padding: 15px; border: 2px solid #e5e7eb; border-radius: 25px; font-size: 16px; outline: none; box-sizing: border-box;"
+                       onfocus="this.style.borderColor='#3b82f6';" onblur="this.style.borderColor='#e5e7eb';"
+                       pattern="[0-9]{2}-[0-9]{2}-[0-9]{4}">
+              </div>
+              <div>
+                <input type="tel" id="phone-number" placeholder="Phone Number (000-000-0000)" required
+                       style="width: 100%; padding: 15px; border: 2px solid #e5e7eb; border-radius: 25px; font-size: 16px; outline: none; box-sizing: border-box;"
+                       onfocus="this.style.borderColor='#3b82f6';" onblur="this.style.borderColor='#e5e7eb';"
+                       pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}">
+              </div>
+            </div>
+            
+            <div style="margin-bottom: 20px; padding: 15px; border: 2px solid #ef4444; border-radius: 10px; background: #fef2f2;">
+              <label style="display: flex; align-items: flex-start; cursor: pointer;">
+                <input type="checkbox" id="consent-checkbox" required style="margin-right: 10px; margin-top: 2px; transform: scale(1.2);">
+                <span style="color: #dc2626; font-size: 14px; line-height: 1.4;">
+                  I confirm all my information is accurate and consent to be contacted as provided below.
+                </span>
+              </label>
+            </div>
+            
+            <div style="margin-bottom: 20px; padding: 15px; background: #f8fafc; border-radius: 8px;">
+              <p style="margin: 0; color: #475569; font-size: 12px; line-height: 1.5;">
+                By checking the box above I expressly consent to receive marketing and informational phone calls and text messages from Super Samples, Unified Marketing Partners LLC, Americas Health, Benefitlink and our Marketing Partners on the land line and/or mobile number I provided. I confirm that the phone number set forth above is accurate and I am the regular user of the phone. I understand these calls may be generated using an autodialer and may contain pre-recorded and artificial voice messages and I do not need to check the box to participate in the deals promoted, offers or to claim a Reward. For SMS message campaigns: Text STOP to stop and HELP for help. Msg & data rates may apply. Periodic messages; max. 30 / month.
+              </p>
+            </div>
+            
+            <button type="button" onclick="coregWidget.submitPersonalInfo()"
+                    style="width: 100%; padding: 15px; background: #16a34a; color: white; border: none; border-radius: 25px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background 0.2s;"
+                    onmouseover="this.style.background='#15803d';" onmouseout="this.style.background='#16a34a';">
+              Continue to Claim Reward
+            </button>
+          </form>
+        </div>
+        
+        <!-- Close button -->
+        <button onclick="document.getElementById('coreg-widget').remove()" 
+                style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 24px; cursor: pointer; color: white; font-weight: bold;">
+          ×
+        </button>
+      `;
+      
+      // Set default gender to male (as shown selected in the image)
+      this.selectedGender = 'male';
+    }
+
+    selectGender(gender) {
+      this.selectedGender = gender;
+      
+      const femaleBtn = this.container.querySelector('#gender-female');
+      const maleBtn = this.container.querySelector('#gender-male');
+      
+      if (gender === 'female') {
+        femaleBtn.style.background = '#22c55e';
+        femaleBtn.style.color = 'white';
+        femaleBtn.style.borderColor = '#22c55e';
+        maleBtn.style.background = '#f3f4f6';
+        maleBtn.style.color = '#6b7280';
+        maleBtn.style.borderColor = '#9ca3af';
+      } else {
+        maleBtn.style.background = '#22c55e';
+        maleBtn.style.color = 'white';
+        maleBtn.style.borderColor = '#22c55e';
+        femaleBtn.style.background = '#f3f4f6';
+        femaleBtn.style.color = '#6b7280';
+        femaleBtn.style.borderColor = '#9ca3af';
+      }
+    }
+
+    async submitPersonalInfo() {
+      const firstName = this.container.querySelector('#first-name').value.trim();
+      const lastName = this.container.querySelector('#last-name').value.trim();
+      const streetAddress = this.container.querySelector('#street-address').value.trim();
+      const zipCode = this.container.querySelector('#zip-code').value.trim();
+      const dateOfBirth = this.container.querySelector('#date-of-birth').value.trim();
+      const phoneNumber = this.container.querySelector('#phone-number').value.trim();
+      const consentChecked = this.container.querySelector('#consent-checkbox').checked;
+      
+      // Validation
+      if (!firstName || !lastName || !streetAddress || !zipCode || !dateOfBirth || !phoneNumber) {
+        alert('Please fill in all required fields');
+        return;
+      }
+      
+      if (!consentChecked) {
+        alert('Please confirm your information and consent to be contacted');
+        return;
+      }
+      
+      // Validate date format (mm-dd-yyyy)
+      const datePattern = /^[0-9]{2}-[0-9]{2}-[0-9]{4}$/;
+      if (!datePattern.test(dateOfBirth)) {
+        alert('Please enter date of birth in mm-dd-yyyy format');
+        return;
+      }
+      
+      // Validate phone format (000-000-0000)
+      const phonePattern = /^[0-9]{3}-[0-9]{3}-[0-9]{4}$/;
+      if (!phonePattern.test(phoneNumber)) {
+        alert('Please enter phone number in 000-000-0000 format');
+        return;
+      }
+      
+      // Save all collected data to database
       try {
-        await fetch(`${API_BASE}/api/collect-email`, {
+        await fetch(`${API_BASE}/api/collect-personal-info`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             sessionId: sessionId,
-            email: email
+            email: this.userEmail,
+            firstName: firstName,
+            lastName: lastName,
+            streetAddress: streetAddress,
+            zipCode: zipCode,
+            gender: this.selectedGender,
+            dateOfBirth: dateOfBirth,
+            phoneNumber: phoneNumber,
+            consentGiven: consentChecked,
+            timestamp: new Date().toISOString(),
+            deviceType: this.getDeviceType(),
+            userAgent: navigator.userAgent,
+            ipAddress: null // Will be populated server-side
           })
         });
+        
+        // Show ad after collecting personal info
+        this.showAd();
       } catch (error) {
-        console.error('Error saving email:', error);
+        console.error('Error saving personal information:', error);
+        // Still show ad even if save fails
+        this.showAd();
       }
-      
-      // Store email locally as well
-      this.userEmail = email;
-      
-      // Show ad after email capture
-      this.showAd();
     }
 
     async showAd() {

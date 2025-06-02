@@ -935,6 +935,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Personal information collection endpoint
+  app.post("/api/collect-personal-info", async (req, res) => {
+    try {
+      const {
+        sessionId,
+        email,
+        firstName,
+        lastName,
+        streetAddress,
+        zipCode,
+        gender,
+        dateOfBirth,
+        phoneNumber,
+        consentGiven,
+        timestamp,
+        deviceType,
+        userAgent
+      } = req.body;
+
+      // Get IP address from request
+      const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
+
+      // Update the session with personal information
+      const session = await storage.getSession(sessionId);
+      if (session) {
+        // Store personal information in session data
+        const personalInfo = {
+          email,
+          firstName,
+          lastName,
+          streetAddress,
+          zipCode,
+          gender,
+          dateOfBirth,
+          phoneNumber,
+          consentGiven,
+          timestamp,
+          deviceType,
+          userAgent,
+          ipAddress
+        };
+
+        // Create a comprehensive user profile with all collected data
+        const responses = await storage.getSessionResponses(sessionId);
+        const responseData = responses.reduce((acc, response) => {
+          acc[response.questionId] = response.answer;
+          return acc;
+        }, {});
+
+        const updatedUserProfile = {
+          ...session.userProfile,
+          personalInfo,
+          responses: responseData,
+          completedPersonalInfo: true
+        };
+
+        // Update session with complete profile
+        await db.update(userSessions)
+          .set({ 
+            userProfile: updatedUserProfile,
+            email: email
+          })
+          .where(eq(userSessions.sessionId, sessionId));
+
+        res.json({ 
+          success: true, 
+          message: "Personal information collected successfully",
+          sessionId: sessionId
+        });
+      } else {
+        res.status(404).json({ message: "Session not found" });
+      }
+    } catch (error) {
+      console.error('Error saving personal information:', error);
+      res.status(500).json({ message: "Failed to save personal information" });
+    }
+  });
+
   // A/B Testing endpoints
   app.get("/api/ab-tests", async (req, res) => {
     try {
