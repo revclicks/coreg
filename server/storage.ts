@@ -1,6 +1,7 @@
 import { 
   questions, campaigns, sites, userSessions, questionResponses, 
   campaignClicks, campaignImpressions, campaignConversions,
+  audienceSegments, userSegmentMemberships, segmentPerformance,
   type Question, type InsertQuestion,
   type Campaign, type InsertCampaign,
   type Site, type InsertSite,
@@ -8,7 +9,10 @@ import {
   type QuestionResponse, type InsertQuestionResponse,
   type CampaignClick, type InsertCampaignClick,
   type CampaignImpression, type InsertCampaignImpression,
-  type CampaignConversion, type InsertCampaignConversion
+  type CampaignConversion, type InsertCampaignConversion,
+  type AudienceSegment, type InsertAudienceSegment,
+  type UserSegmentMembership, type InsertUserSegmentMembership,
+  type SegmentPerformance, type InsertSegmentPerformance
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
@@ -59,6 +63,23 @@ export interface IStorage {
   getQuestionStats(startDate?: Date, endDate?: Date): Promise<any[]>;
   getCampaignStats(startDate?: Date, endDate?: Date): Promise<any[]>;
   getDashboardStats(): Promise<any>;
+
+  // Audience Segments
+  getAudienceSegments(): Promise<AudienceSegment[]>;
+  getAudienceSegment(id: number): Promise<AudienceSegment | undefined>;
+  createAudienceSegment(segment: InsertAudienceSegment): Promise<AudienceSegment>;
+  updateAudienceSegment(id: number, segment: Partial<InsertAudienceSegment>): Promise<AudienceSegment | undefined>;
+  deleteAudienceSegment(id: number): Promise<boolean>;
+  
+  // Segment Memberships
+  addUserToSegment(sessionId: string, segmentId: number, score?: number): Promise<UserSegmentMembership>;
+  removeUserFromSegment(sessionId: string, segmentId: number): Promise<boolean>;
+  getUserSegments(sessionId: string): Promise<AudienceSegment[]>;
+  getSegmentMembers(segmentId: number): Promise<UserSegmentMembership[]>;
+  
+  // Segment Analytics
+  updateSegmentPerformance(segmentId: number, campaignId: number, metrics: any): Promise<void>;
+  getSegmentPerformance(segmentId: number, startDate?: Date, endDate?: Date): Promise<SegmentPerformance[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -293,6 +314,127 @@ export class DatabaseStorage implements IStorage {
       dailyConversions: todayConversions.count,
       revenue: Number(todayConversions.revenue).toFixed(2),
     };
+  }
+
+  // Audience Segments
+  async getAudienceSegments(): Promise<AudienceSegment[]> {
+    return await db.select().from(audienceSegments).orderBy(desc(audienceSegments.createdAt));
+  }
+
+  async getAudienceSegment(id: number): Promise<AudienceSegment | undefined> {
+    const [segment] = await db.select().from(audienceSegments).where(eq(audienceSegments.id, id));
+    return segment || undefined;
+  }
+
+  async createAudienceSegment(segment: InsertAudienceSegment): Promise<AudienceSegment> {
+    const [newSegment] = await db
+      .insert(audienceSegments)
+      .values(segment)
+      .returning();
+    return newSegment;
+  }
+
+  async updateAudienceSegment(id: number, segment: Partial<InsertAudienceSegment>): Promise<AudienceSegment | undefined> {
+    const [updated] = await db
+      .update(audienceSegments)
+      .set({ ...segment, updatedAt: new Date() })
+      .where(eq(audienceSegments.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteAudienceSegment(id: number): Promise<boolean> {
+    const result = await db.delete(audienceSegments).where(eq(audienceSegments.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Segment Memberships
+  async addUserToSegment(sessionId: string, segmentId: number, score?: number): Promise<UserSegmentMembership> {
+    const [membership] = await db
+      .insert(userSegmentMemberships)
+      .values({
+        sessionId,
+        segmentId,
+        score: score ? score.toString() : "1.0"
+      })
+      .returning();
+    return membership;
+  }
+
+  async removeUserFromSegment(sessionId: string, segmentId: number): Promise<boolean> {
+    const result = await db
+      .delete(userSegmentMemberships)
+      .where(and(
+        eq(userSegmentMemberships.sessionId, sessionId),
+        eq(userSegmentMemberships.segmentId, segmentId)
+      ));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async getUserSegments(sessionId: string): Promise<AudienceSegment[]> {
+    const segments = await db
+      .select({
+        id: audienceSegments.id,
+        name: audienceSegments.name,
+        description: audienceSegments.description,
+        conditions: audienceSegments.conditions,
+        segmentType: audienceSegments.segmentType,
+        estimatedSize: audienceSegments.estimatedSize,
+        active: audienceSegments.active,
+        createdAt: audienceSegments.createdAt,
+        updatedAt: audienceSegments.updatedAt
+      })
+      .from(userSegmentMemberships)
+      .innerJoin(audienceSegments, eq(userSegmentMemberships.segmentId, audienceSegments.id))
+      .where(eq(userSegmentMemberships.sessionId, sessionId));
+    
+    return segments;
+  }
+
+  async getSegmentMembers(segmentId: number): Promise<UserSegmentMembership[]> {
+    return await db
+      .select()
+      .from(userSegmentMemberships)
+      .where(eq(userSegmentMemberships.segmentId, segmentId));
+  }
+
+  // Segment Analytics
+  async updateSegmentPerformance(segmentId: number, campaignId: number, metrics: any): Promise<void> {
+    const today = new Date();
+    await db
+      .insert(segmentPerformance)
+      .values({
+        segmentId,
+        campaignId,
+        date: today,
+        impressions: metrics.impressions || 0,
+        clicks: metrics.clicks || 0,
+        conversions: metrics.conversions || 0,
+        revenue: metrics.revenue?.toString() || "0"
+      })
+      .onConflictDoUpdate({
+        target: [segmentPerformance.segmentId, segmentPerformance.campaignId, segmentPerformance.date],
+        set: {
+          impressions: sql`${segmentPerformance.impressions} + ${metrics.impressions || 0}`,
+          clicks: sql`${segmentPerformance.clicks} + ${metrics.clicks || 0}`,
+          conversions: sql`${segmentPerformance.conversions} + ${metrics.conversions || 0}`,
+          revenue: sql`${segmentPerformance.revenue} + ${metrics.revenue?.toString() || "0"}`
+        }
+      });
+  }
+
+  async getSegmentPerformance(segmentId: number, startDate?: Date, endDate?: Date): Promise<SegmentPerformance[]> {
+    let query = db.select().from(segmentPerformance).where(eq(segmentPerformance.segmentId, segmentId));
+    
+    if (startDate && endDate) {
+      query = query.where(and(
+        eq(segmentPerformance.segmentId, segmentId),
+        gte(segmentPerformance.date, startDate),
+        lte(segmentPerformance.date, endDate)
+      ));
+    }
+    
+    return await query.orderBy(desc(segmentPerformance.date));
   }
 }
 

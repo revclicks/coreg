@@ -5,7 +5,9 @@ import { db } from "./db";
 import { 
   insertQuestionSchema, insertCampaignSchema, insertSiteSchema,
   insertUserSessionSchema, insertQuestionResponseSchema, insertCampaignClickSchema,
-  questions, campaigns, sites, userSessions, questionResponses, campaignImpressions, campaignClicks, campaignConversions
+  insertAudienceSegmentSchema,
+  questions, campaigns, sites, userSessions, questionResponses, campaignImpressions, campaignClicks, campaignConversions,
+  audienceSegments, userSegmentMemberships
 } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
@@ -589,6 +591,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching data collection:', error);
       res.status(500).json({ message: "Failed to fetch data collection" });
+    }
+  });
+
+  // Audience Segmentation endpoints
+  app.get("/api/audience-segments", async (req, res) => {
+    try {
+      const segments = await storage.getAudienceSegments();
+      res.json(segments);
+    } catch (error) {
+      console.error('Error fetching audience segments:', error);
+      res.status(500).json({ message: "Failed to fetch audience segments" });
+    }
+  });
+
+  app.post("/api/audience-segments", async (req, res) => {
+    try {
+      const validatedData = insertAudienceSegmentSchema.parse(req.body);
+      const segment = await storage.createAudienceSegment(validatedData);
+      res.json(segment);
+    } catch (error) {
+      console.error('Error creating audience segment:', error);
+      res.status(500).json({ message: "Failed to create audience segment" });
+    }
+  });
+
+  app.get("/api/audience-segments/analytics", async (req, res) => {
+    try {
+      const segments = await storage.getAudienceSegments();
+      const totalSegments = segments.length;
+      const activeSegments = segments.filter(s => s.active).length;
+      const totalUsers = segments.reduce((sum, s) => sum + (s.estimatedSize || 0), 0);
+      const averageSegmentSize = totalSegments > 0 ? Math.round(totalUsers / totalSegments) : 0;
+      
+      // Find top performing segment (simplified - in practice you'd use conversion data)
+      const topPerformingSegment = segments.length > 0 ? segments[0] : null;
+
+      res.json({
+        totalSegments,
+        activeSegments,
+        totalUsers,
+        averageSegmentSize,
+        topPerformingSegment
+      });
+    } catch (error) {
+      console.error('Error fetching segment analytics:', error);
+      res.status(500).json({ message: "Failed to fetch segment analytics" });
+    }
+  });
+
+  app.get("/api/audience-segments/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const segment = await storage.getAudienceSegment(id);
+      if (!segment) {
+        return res.status(404).json({ message: "Segment not found" });
+      }
+      res.json(segment);
+    } catch (error) {
+      console.error('Error fetching audience segment:', error);
+      res.status(500).json({ message: "Failed to fetch audience segment" });
+    }
+  });
+
+  app.put("/api/audience-segments/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const updateData = req.body;
+      const segment = await storage.updateAudienceSegment(id, updateData);
+      if (!segment) {
+        return res.status(404).json({ message: "Segment not found" });
+      }
+      res.json(segment);
+    } catch (error) {
+      console.error('Error updating audience segment:', error);
+      res.status(500).json({ message: "Failed to update audience segment" });
+    }
+  });
+
+  app.delete("/api/audience-segments/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteAudienceSegment(id);
+      if (!success) {
+        return res.status(404).json({ message: "Segment not found" });
+      }
+      res.json({ message: "Segment deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting audience segment:', error);
+      res.status(500).json({ message: "Failed to delete audience segment" });
     }
   });
 
