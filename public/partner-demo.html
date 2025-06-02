@@ -304,7 +304,8 @@
             setTimeout(() => {
                 if (window.coregWidget) {
                     // Hide the main content
-                    document.querySelector('.container').style.display = 'none';
+                    document.querySelector('.hero-section').style.display = 'none';
+                    document.querySelector('.features').style.display = 'none';
                     
                     // Start the questionnaire
                     coregWidget.startQuestionnaire(email);
