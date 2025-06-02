@@ -195,6 +195,76 @@ export const questionStats = pgTable("question_stats", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// RTB Bid Requests table
+export const rtbBidRequests = pgTable("rtb_bid_requests", {
+  id: serial("id").primaryKey(),
+  requestId: text("request_id").notNull().unique(),
+  sessionId: text("session_id").notNull(),
+  userId: text("user_id"),
+  siteId: integer("site_id").references(() => sites.id),
+  deviceType: text("device_type").notNull(), // mobile, desktop, tablet
+  userAgent: text("user_agent"),
+  ipAddress: text("ip_address"),
+  geo: jsonb("geo"), // { country, region, city, lat, lon }
+  userProfile: jsonb("user_profile"), // aggregated user data from responses
+  auctionType: text("auction_type").notNull().default("first_price"), // first_price, second_price
+  floorPrice: decimal("floor_price", { precision: 10, scale: 4 }).default("0.001"),
+  timeout: integer("timeout").notNull().default(100), // milliseconds
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// RTB Bids table
+export const rtbBids = pgTable("rtb_bids", {
+  id: serial("id").primaryKey(),
+  requestId: text("request_id").notNull().references(() => rtbBidRequests.requestId),
+  campaignId: integer("campaign_id").notNull().references(() => campaigns.id),
+  bidPrice: decimal("bid_price", { precision: 10, scale: 4 }).notNull(),
+  adMarkup: text("ad_markup"), // HTML/creative content
+  clickUrl: text("click_url").notNull(),
+  impressionUrl: text("impression_url"),
+  score: decimal("score", { precision: 10, scale: 6 }).notNull(), // calculated bid score
+  won: boolean("won").default(false),
+  reason: text("reason"), // win/loss reason
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// RTB Auction Results table
+export const rtbAuctions = pgTable("rtb_auctions", {
+  id: serial("id").primaryKey(),
+  requestId: text("request_id").notNull().references(() => rtbBidRequests.requestId),
+  winningBidId: integer("winning_bid_id").references(() => rtbBids.id),
+  winningPrice: decimal("winning_price", { precision: 10, scale: 4 }),
+  secondPrice: decimal("second_price", { precision: 10, scale: 4 }),
+  totalBids: integer("total_bids").notNull().default(0),
+  auctionDuration: integer("auction_duration"), // milliseconds
+  served: boolean("served").default(false),
+  clicked: boolean("clicked").default(false),
+  converted: boolean("converted").default(false),
+  revenue: decimal("revenue", { precision: 10, scale: 2 }).default("0"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// RTB Campaign Performance table
+export const rtbCampaignPerformance = pgTable("rtb_campaign_performance", {
+  id: serial("id").primaryKey(),
+  campaignId: integer("campaign_id").notNull().references(() => campaigns.id),
+  date: timestamp("date").notNull(),
+  bidRequests: integer("bid_requests").notNull().default(0),
+  bids: integer("bids").notNull().default(0),
+  wins: integer("wins").notNull().default(0),
+  impressions: integer("impressions").notNull().default(0),
+  clicks: integer("clicks").notNull().default(0),
+  conversions: integer("conversions").notNull().default(0),
+  spend: decimal("spend", { precision: 10, scale: 2 }).notNull().default("0"),
+  revenue: decimal("revenue", { precision: 10, scale: 2 }).notNull().default("0"),
+  avgBidPrice: decimal("avg_bid_price", { precision: 10, scale: 4 }).default("0"),
+  avgWinPrice: decimal("avg_win_price", { precision: 10, scale: 4 }).default("0"),
+  winRate: decimal("win_rate", { precision: 5, scale: 4 }).default("0"),
+  ctr: decimal("ctr", { precision: 5, scale: 4 }).default("0"),
+  conversionRate: decimal("conversion_rate", { precision: 5, scale: 4 }).default("0"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const questionsRelations = relations(questions, ({ many }) => ({
   responses: many(questionResponses),
@@ -322,6 +392,47 @@ export const abTestResultsRelations = relations(abTestResults, ({ one }) => ({
   }),
 }));
 
+export const rtbBidRequestsRelations = relations(rtbBidRequests, ({ one, many }) => ({
+  site: one(sites, {
+    fields: [rtbBidRequests.siteId],
+    references: [sites.id],
+  }),
+  bids: many(rtbBids),
+  auction: one(rtbAuctions, {
+    fields: [rtbBidRequests.requestId],
+    references: [rtbAuctions.requestId],
+  }),
+}));
+
+export const rtbBidsRelations = relations(rtbBids, ({ one }) => ({
+  request: one(rtbBidRequests, {
+    fields: [rtbBids.requestId],
+    references: [rtbBidRequests.requestId],
+  }),
+  campaign: one(campaigns, {
+    fields: [rtbBids.campaignId],
+    references: [campaigns.id],
+  }),
+}));
+
+export const rtbAuctionsRelations = relations(rtbAuctions, ({ one }) => ({
+  request: one(rtbBidRequests, {
+    fields: [rtbAuctions.requestId],
+    references: [rtbBidRequests.requestId],
+  }),
+  winningBid: one(rtbBids, {
+    fields: [rtbAuctions.winningBidId],
+    references: [rtbBids.id],
+  }),
+}));
+
+export const rtbCampaignPerformanceRelations = relations(rtbCampaignPerformance, ({ one }) => ({
+  campaign: one(campaigns, {
+    fields: [rtbCampaignPerformance.campaignId],
+    references: [campaigns.id],
+  }),
+}));
+
 // Insert schemas
 export const insertQuestionSchema = createInsertSchema(questions).omit({
   id: true,
@@ -444,3 +555,37 @@ export const insertQuestionStatsSchema = createInsertSchema(questionStats).omit(
 
 export type QuestionStats = typeof questionStats.$inferSelect;
 export type InsertQuestionStats = z.infer<typeof insertQuestionStatsSchema>;
+
+// RTB Insert schemas
+export const insertRtbBidRequestSchema = createInsertSchema(rtbBidRequests).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRtbBidSchema = createInsertSchema(rtbBids).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRtbAuctionSchema = createInsertSchema(rtbAuctions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRtbCampaignPerformanceSchema = createInsertSchema(rtbCampaignPerformance).omit({
+  id: true,
+  createdAt: true,
+});
+
+// RTB Types
+export type RtbBidRequest = typeof rtbBidRequests.$inferSelect;
+export type InsertRtbBidRequest = z.infer<typeof insertRtbBidRequestSchema>;
+
+export type RtbBid = typeof rtbBids.$inferSelect;
+export type InsertRtbBid = z.infer<typeof insertRtbBidSchema>;
+
+export type RtbAuction = typeof rtbAuctions.$inferSelect;
+export type InsertRtbAuction = z.infer<typeof insertRtbAuctionSchema>;
+
+export type RtbCampaignPerformance = typeof rtbCampaignPerformance.$inferSelect;
+export type InsertRtbCampaignPerformance = z.infer<typeof insertRtbCampaignPerformanceSchema>;

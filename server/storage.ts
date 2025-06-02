@@ -3,6 +3,7 @@ import {
   campaignClicks, campaignImpressions, campaignConversions,
   audienceSegments, userSegmentMemberships, segmentPerformance,
   abTestExperiments, abTestVariants, abTestResults, questionStats,
+  rtbBidRequests, rtbBids, rtbAuctions, rtbCampaignPerformance,
   type Question, type InsertQuestion,
   type Campaign, type InsertCampaign,
   type Site, type InsertSite,
@@ -17,7 +18,11 @@ import {
   type AbTestExperiment, type InsertAbTestExperiment,
   type AbTestVariant, type InsertAbTestVariant,
   type AbTestResult, type InsertAbTestResult,
-  type QuestionStats, type InsertQuestionStats
+  type QuestionStats, type InsertQuestionStats,
+  type RtbBidRequest, type InsertRtbBidRequest,
+  type RtbBid, type InsertRtbBid,
+  type RtbAuction, type InsertRtbAuction,
+  type RtbCampaignPerformance, type InsertRtbCampaignPerformance
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
@@ -108,6 +113,18 @@ export interface IStorage {
   getQuestionsWithOptimizedOrder(): Promise<Question[]>;
   updateQuestionPriority(questionId: number, priority: number, manualPriority?: number): Promise<Question | undefined>;
   calculateQuestionMetrics(questionId: number, date: Date): Promise<any>;
+
+  // RTB Operations
+  createBidRequest(request: InsertRtbBidRequest): Promise<RtbBidRequest>;
+  getBidRequest(requestId: string): Promise<RtbBidRequest | undefined>;
+  createBid(bid: InsertRtbBid): Promise<RtbBid>;
+  getBidsForRequest(requestId: string): Promise<RtbBid[]>;
+  createAuction(auction: InsertRtbAuction): Promise<RtbAuction>;
+  getAuction(requestId: string): Promise<RtbAuction | undefined>;
+  updateAuctionResult(requestId: string, updates: Partial<RtbAuction>): Promise<RtbAuction | undefined>;
+  recordRtbPerformance(performance: InsertRtbCampaignPerformance): Promise<RtbCampaignPerformance>;
+  getRtbPerformance(campaignId: number, startDate?: Date, endDate?: Date): Promise<RtbCampaignPerformance[]>;
+  getRtbAnalytics(): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
