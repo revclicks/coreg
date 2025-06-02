@@ -96,6 +96,40 @@ export const campaignConversions = pgTable("campaign_conversions", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
+// Audience segments table
+export const audienceSegments = pgTable("audience_segments", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  conditions: jsonb("conditions").notNull(), // Complex rules for segment membership
+  segmentType: text("segment_type").notNull(), // behavioral, demographic, custom
+  estimatedSize: integer("estimated_size").default(0),
+  active: boolean("active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User segment memberships table
+export const userSegmentMemberships = pgTable("user_segment_memberships", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  segmentId: integer("segment_id").references(() => audienceSegments.id),
+  addedAt: timestamp("added_at").defaultNow(),
+  score: decimal("score", { precision: 5, scale: 3 }).default("1.0"), // Confidence score
+});
+
+// Segment performance tracking
+export const segmentPerformance = pgTable("segment_performance", {
+  id: serial("id").primaryKey(),
+  segmentId: integer("segment_id").references(() => audienceSegments.id),
+  campaignId: integer("campaign_id").references(() => campaigns.id),
+  impressions: integer("impressions").default(0),
+  clicks: integer("clicks").default(0),
+  conversions: integer("conversions").default(0),
+  revenue: decimal("revenue", { precision: 10, scale: 2 }).default("0"),
+  date: timestamp("date").notNull(),
+});
+
 // Relations
 export const questionsRelations = relations(questions, ({ many }) => ({
   responses: many(questionResponses),
@@ -157,6 +191,29 @@ export const campaignConversionsRelations = relations(campaignConversions, ({ on
   click: one(campaignClicks, {
     fields: [campaignConversions.clickId],
     references: [campaignClicks.clickId],
+  }),
+}));
+
+export const audienceSegmentsRelations = relations(audienceSegments, ({ many }) => ({
+  memberships: many(userSegmentMemberships),
+  performance: many(segmentPerformance),
+}));
+
+export const userSegmentMembershipsRelations = relations(userSegmentMemberships, ({ one }) => ({
+  segment: one(audienceSegments, {
+    fields: [userSegmentMemberships.segmentId],
+    references: [audienceSegments.id],
+  }),
+}));
+
+export const segmentPerformanceRelations = relations(segmentPerformance, ({ one }) => ({
+  segment: one(audienceSegments, {
+    fields: [segmentPerformance.segmentId],
+    references: [audienceSegments.id],
+  }),
+  campaign: one(campaigns, {
+    fields: [segmentPerformance.campaignId],
+    references: [campaigns.id],
   }),
 }));
 
@@ -226,3 +283,27 @@ export type InsertCampaignImpression = z.infer<typeof insertCampaignImpressionSc
 
 export type CampaignConversion = typeof campaignConversions.$inferSelect;
 export type InsertCampaignConversion = z.infer<typeof insertCampaignConversionSchema>;
+
+export const insertAudienceSegmentSchema = createInsertSchema(audienceSegments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserSegmentMembershipSchema = createInsertSchema(userSegmentMemberships).omit({
+  id: true,
+  addedAt: true,
+});
+
+export const insertSegmentPerformanceSchema = createInsertSchema(segmentPerformance).omit({
+  id: true,
+});
+
+export type AudienceSegment = typeof audienceSegments.$inferSelect;
+export type InsertAudienceSegment = z.infer<typeof insertAudienceSegmentSchema>;
+
+export type UserSegmentMembership = typeof userSegmentMemberships.$inferSelect;
+export type InsertUserSegmentMembership = z.infer<typeof insertUserSegmentMembershipSchema>;
+
+export type SegmentPerformance = typeof segmentPerformance.$inferSelect;
+export type InsertSegmentPerformance = z.infer<typeof insertSegmentPerformanceSchema>;
