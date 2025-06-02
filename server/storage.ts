@@ -2,7 +2,7 @@ import {
   questions, campaigns, sites, userSessions, questionResponses, 
   campaignClicks, campaignImpressions, campaignConversions,
   audienceSegments, userSegmentMemberships, segmentPerformance,
-  abTestExperiments, abTestVariants, abTestResults,
+  abTestExperiments, abTestVariants, abTestResults, questionStats,
   type Question, type InsertQuestion,
   type Campaign, type InsertCampaign,
   type Site, type InsertSite,

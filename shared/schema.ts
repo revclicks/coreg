@@ -10,6 +10,8 @@ export const questions = pgTable("questions", {
   type: text("type").notNull(), // multiple_choice, radio, text, etc.
   options: jsonb("options"), // JSON array of answer options
   priority: integer("priority").notNull().default(1),
+  manualPriority: integer("manual_priority"), // Manual override for question order
+  autoOptimize: boolean("auto_optimize").default(true), // Whether to use auto-optimization
   active: boolean("active").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -177,9 +179,33 @@ export const abTestResults = pgTable("ab_test_results", {
   completionTime: integer("completion_time"), // Time to complete in seconds
 });
 
+// Question Statistics table
+export const questionStats = pgTable("question_stats", {
+  id: serial("id").primaryKey(),
+  questionId: integer("question_id").references(() => questions.id),
+  date: timestamp("date").notNull(),
+  impressions: integer("impressions").default(0),
+  responses: integer("responses").default(0),
+  subsequentClicks: integer("subsequent_clicks").default(0), // Clicks on campaigns after this question
+  subsequentConversions: integer("subsequent_conversions").default(0),
+  revenue: decimal("revenue", { precision: 10, scale: 2 }).default("0"),
+  avgCompletionTime: decimal("avg_completion_time", { precision: 8, scale: 2 }), // Average time to answer
+  earningsPerImpression: decimal("earnings_per_impression", { precision: 10, scale: 6 }).default("0"),
+  responseRate: decimal("response_rate", { precision: 5, scale: 4 }).default("0"), // responses/impressions
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const questionsRelations = relations(questions, ({ many }) => ({
   responses: many(questionResponses),
+  stats: many(questionStats),
+}));
+
+export const questionStatsRelations = relations(questionStats, ({ one }) => ({
+  question: one(questions, {
+    fields: [questionStats.questionId],
+    references: [questions.id],
+  }),
 }));
 
 export const campaignsRelations = relations(campaigns, ({ many }) => ({
@@ -410,3 +436,11 @@ export type InsertAbTestVariant = z.infer<typeof insertAbTestVariantSchema>;
 
 export type AbTestResult = typeof abTestResults.$inferSelect;
 export type InsertAbTestResult = z.infer<typeof insertAbTestResultSchema>;
+
+export const insertQuestionStatsSchema = createInsertSchema(questionStats).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type QuestionStats = typeof questionStats.$inferSelect;
+export type InsertQuestionStats = z.infer<typeof insertQuestionStatsSchema>;
