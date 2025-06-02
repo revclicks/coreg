@@ -9,6 +9,7 @@ import Campaigns from "@/pages/campaigns";
 import Sites from "@/pages/sites";
 import Stats from "@/pages/stats";
 import AdvancedAnalytics from "@/pages/advanced-analytics";
+import AnalyticsHub from "@/pages/analytics-hub";
 import Data from "@/pages/data";
 import AudienceSegments from "@/pages/audience-segments";
 import ABTesting from "@/pages/ab-testing";
@@ -41,6 +42,7 @@ function Router() {
       <Route path="/targeting" component={Targeting} />
       <Route path="/stats" component={Stats} />
       <Route path="/analytics" component={AdvancedAnalytics} />
+      <Route path="/analytics-hub" component={AnalyticsHub} />
       <Route path="/data" component={Data} />
       <Route path="/audience-segments" component={AudienceSegments} />
       <Route path="/ab-testing" component={ABTesting} />
