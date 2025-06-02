@@ -15,6 +15,7 @@ import { nanoid } from "nanoid";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { rtbEngine } from "./rtb-engine";
+import { personalizationEngine } from "./personalization-engine";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
