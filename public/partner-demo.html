@@ -300,9 +300,13 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'Processing...';
             
-            // Start the CoReg questionnaire with the captured email
+            // Hide the main container and show widget
             setTimeout(() => {
                 if (window.coregWidget) {
+                    // Hide the main content
+                    document.querySelector('.container').style.display = 'none';
+                    
+                    // Start the questionnaire
                     coregWidget.startQuestionnaire(email);
                 } else {
                     console.error('CoReg widget not loaded');
