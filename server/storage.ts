@@ -80,6 +80,22 @@ export interface IStorage {
   // Segment Analytics
   updateSegmentPerformance(segmentId: number, campaignId: number, metrics: any): Promise<void>;
   getSegmentPerformance(segmentId: number, startDate?: Date, endDate?: Date): Promise<SegmentPerformance[]>;
+
+  // A/B Testing
+  getAbTestExperiments(): Promise<AbTestExperiment[]>;
+  getAbTestExperiment(id: number): Promise<AbTestExperiment | undefined>;
+  createAbTestExperiment(experiment: InsertAbTestExperiment): Promise<AbTestExperiment>;
+  updateAbTestExperiment(id: number, experiment: Partial<InsertAbTestExperiment>): Promise<AbTestExperiment | undefined>;
+  deleteAbTestExperiment(id: number): Promise<boolean>;
+  
+  // A/B Test Variants
+  createAbTestVariant(variant: InsertAbTestVariant): Promise<AbTestVariant>;
+  getExperimentVariants(experimentId: number): Promise<AbTestVariant[]>;
+  
+  // A/B Test Results
+  recordAbTestResult(result: InsertAbTestResult): Promise<AbTestResult>;
+  getExperimentResults(experimentId: number): Promise<AbTestResult[]>;
+  getVariantMetrics(variantId: number): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {

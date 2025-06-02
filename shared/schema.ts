@@ -130,6 +130,53 @@ export const segmentPerformance = pgTable("segment_performance", {
   date: timestamp("date").notNull(),
 });
 
+// A/B Test Experiments table
+export const abTestExperiments = pgTable("ab_test_experiments", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  testType: text("test_type").notNull(), // 'campaign' or 'question'
+  status: text("status").default("draft"), // draft, running, paused, completed
+  trafficSplit: integer("traffic_split").default(50), // Percentage for variant A (0-100)
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  winnerVariant: text("winner_variant"), // 'A' or 'B' or null
+  confidenceLevel: decimal("confidence_level", { precision: 5, scale: 2 }),
+  statisticalSignificance: boolean("statistical_significance").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// A/B Test Variants table
+export const abTestVariants = pgTable("ab_test_variants", {
+  id: serial("id").primaryKey(),
+  experimentId: integer("experiment_id").references(() => abTestExperiments.id),
+  variant: text("variant").notNull(), // 'A' or 'B'
+  name: text("name").notNull(),
+  // For campaign tests
+  campaignId: integer("campaign_id").references(() => campaigns.id),
+  // For question tests
+  questionId: integer("question_id").references(() => questions.id),
+  // Variant-specific content
+  content: jsonb("content"), // Stores variant-specific modifications
+  isControl: boolean("is_control").default(false),
+});
+
+// A/B Test Results table
+export const abTestResults = pgTable("ab_test_results", {
+  id: serial("id").primaryKey(),
+  experimentId: integer("experiment_id").references(() => abTestExperiments.id),
+  variantId: integer("variant_id").references(() => abTestVariants.id),
+  sessionId: text("session_id").notNull(),
+  assignedAt: timestamp("assigned_at").defaultNow(),
+  // Metrics
+  impressions: integer("impressions").default(0),
+  clicks: integer("clicks").default(0),
+  conversions: integer("conversions").default(0),
+  revenue: decimal("revenue", { precision: 10, scale: 2 }).default("0"),
+  completionTime: integer("completion_time"), // Time to complete in seconds
+});
+
 // Relations
 export const questionsRelations = relations(questions, ({ many }) => ({
   responses: many(questionResponses),
@@ -214,6 +261,38 @@ export const segmentPerformanceRelations = relations(segmentPerformance, ({ one 
   campaign: one(campaigns, {
     fields: [segmentPerformance.campaignId],
     references: [campaigns.id],
+  }),
+}));
+
+export const abTestExperimentsRelations = relations(abTestExperiments, ({ many }) => ({
+  variants: many(abTestVariants),
+  results: many(abTestResults),
+}));
+
+export const abTestVariantsRelations = relations(abTestVariants, ({ one, many }) => ({
+  experiment: one(abTestExperiments, {
+    fields: [abTestVariants.experimentId],
+    references: [abTestExperiments.id],
+  }),
+  campaign: one(campaigns, {
+    fields: [abTestVariants.campaignId],
+    references: [campaigns.id],
+  }),
+  question: one(questions, {
+    fields: [abTestVariants.questionId],
+    references: [questions.id],
+  }),
+  results: many(abTestResults),
+}));
+
+export const abTestResultsRelations = relations(abTestResults, ({ one }) => ({
+  experiment: one(abTestExperiments, {
+    fields: [abTestResults.experimentId],
+    references: [abTestExperiments.id],
+  }),
+  variant: one(abTestVariants, {
+    fields: [abTestResults.variantId],
+    references: [abTestVariants.id],
   }),
 }));
 
@@ -307,3 +386,27 @@ export type InsertUserSegmentMembership = z.infer<typeof insertUserSegmentMember
 
 export type SegmentPerformance = typeof segmentPerformance.$inferSelect;
 export type InsertSegmentPerformance = z.infer<typeof insertSegmentPerformanceSchema>;
+
+export const insertAbTestExperimentSchema = createInsertSchema(abTestExperiments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAbTestVariantSchema = createInsertSchema(abTestVariants).omit({
+  id: true,
+});
+
+export const insertAbTestResultSchema = createInsertSchema(abTestResults).omit({
+  id: true,
+  assignedAt: true,
+});
+
+export type AbTestExperiment = typeof abTestExperiments.$inferSelect;
+export type InsertAbTestExperiment = z.infer<typeof insertAbTestExperimentSchema>;
+
+export type AbTestVariant = typeof abTestVariants.$inferSelect;
+export type InsertAbTestVariant = z.infer<typeof insertAbTestVariantSchema>;
+
+export type AbTestResult = typeof abTestResults.$inferSelect;
+export type InsertAbTestResult = z.infer<typeof insertAbTestResultSchema>;
