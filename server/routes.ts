@@ -487,41 +487,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Data collection endpoint
+  // Data collection endpoint with analytics
   app.get("/api/data-collection", async (req, res) => {
     try {
-      // Get all question responses with joined data
-      const responses = await db
+      // Get sessions with their data
+      const sessions = await db
         .select({
-          sessionId: questionResponses.sessionId,
-          questionId: questionResponses.questionId,
-          answer: questionResponses.answer,
-          questionText: questions.text,
+          sessionId: userSessions.sessionId,
           timestamp: userSessions.createdAt,
+          userAgent: userSessions.userAgent,
+          ipAddress: userSessions.ipAddress,
           siteName: sites.name
         })
-        .from(questionResponses)
-        .leftJoin(questions, eq(questionResponses.questionId, questions.id))
-        .leftJoin(userSessions, eq(questionResponses.sessionId, userSessions.sessionId))
+        .from(userSessions)
         .leftJoin(sites, eq(userSessions.siteId, sites.id))
         .orderBy(desc(userSessions.createdAt))
         .limit(100);
 
-      const formattedResponses = responses.map(response => ({
-        sessionId: response.sessionId,
-        timestamp: response.timestamp?.toISOString() || new Date().toISOString(),
-        site: response.siteName || 'Demo Site',
-        question: response.questionId === 0 ? 'Email Address' : (response.questionText || 'Unknown Question'),
-        answer: response.answer,
-        device: 'Unknown',
-        state: 'Unknown'
-      }));
+      // Get all responses for these sessions
+      const allResponses = await db
+        .select({
+          sessionId: questionResponses.sessionId,
+          questionId: questionResponses.questionId,
+          answer: questionResponses.answer,
+          questionText: questions.text
+        })
+        .from(questionResponses)
+        .leftJoin(questions, eq(questionResponses.questionId, questions.id));
+
+      // Group responses by session
+      const responsesBySession = allResponses.reduce((acc: any, response) => {
+        const sessionId = response.sessionId;
+        if (!sessionId) return acc;
+        
+        if (!acc[sessionId]) {
+          acc[sessionId] = [];
+        }
+        acc[sessionId].push({
+          questionId: response.questionId,
+          question: response.questionId === 0 ? 'Email Address' : (response.questionText || 'Unknown'),
+          answer: response.answer
+        });
+        return acc;
+      }, {});
+
+      // Helper function to detect device from user agent
+      const detectDevice = (userAgent: string | null) => {
+        if (!userAgent) return 'Unknown';
+        if (userAgent.includes('Mobile')) return 'Mobile';
+        if (userAgent.includes('Tablet')) return 'Tablet';
+        return 'Desktop';
+      };
+
+      // Helper function to get state from IP (simplified)
+      const getStateFromIP = (ip: string | null) => {
+        // In a real app, you'd use a geolocation service
+        if (!ip) return 'Unknown';
+        // Mock state detection based on IP patterns
+        if (ip.startsWith('192.')) return 'Local';
+        return 'Unknown';
+      };
+
+      // Format the data for display
+      const formattedSessions = sessions.map(session => {
+        const responses = responsesBySession[session.sessionId] || [];
+        const email = responses.find(r => r.questionId === 0)?.answer || 'No email provided';
+        const questionAnswers = responses.filter(r => r.questionId !== 0);
+
+        return {
+          sessionId: session.sessionId,
+          email: email,
+          timestamp: session.timestamp?.toISOString() || new Date().toISOString(),
+          site: session.siteName || 'Demo Site',
+          device: detectDevice(session.userAgent),
+          state: getStateFromIP(session.ipAddress),
+          totalQuestions: questionAnswers.length,
+          responses: questionAnswers
+        };
+      });
+
+      // Calculate analytics
+      const analytics = {
+        totalLeads: formattedSessions.filter(s => s.email !== 'No email provided').length,
+        totalSessions: formattedSessions.length,
+        totalResponses: allResponses.length,
+        deviceBreakdown: {
+          mobile: formattedSessions.filter(s => s.device === 'Mobile').length,
+          desktop: formattedSessions.filter(s => s.device === 'Desktop').length,
+          tablet: formattedSessions.filter(s => s.device === 'Tablet').length,
+          unknown: formattedSessions.filter(s => s.device === 'Unknown').length
+        }
+      };
 
       res.json({
-        responses: formattedResponses,
+        sessions: formattedSessions,
+        analytics,
         page: 1,
         limit: 100,
-        total: formattedResponses.length
+        total: formattedSessions.length
       });
     } catch (error) {
       console.error('Error fetching data collection:', error);
