@@ -57,10 +57,12 @@ export default function AudienceSegments() {
 
   const createSegmentMutation = useMutation({
     mutationFn: async (data: SegmentFormData) => {
-      return apiRequest("/api/audience-segments", {
+      const response = await fetch("/api/audience-segments", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/audience-segments"] });

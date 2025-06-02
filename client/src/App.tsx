@@ -10,6 +10,7 @@ import Sites from "@/pages/sites";
 import Stats from "@/pages/stats";
 import AdvancedAnalytics from "@/pages/advanced-analytics";
 import Data from "@/pages/data";
+import AudienceSegments from "@/pages/audience-segments";
 import Targeting from "@/pages/targeting";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/stats" component={Stats} />
       <Route path="/analytics" component={AdvancedAnalytics} />
       <Route path="/data" component={Data} />
+      <Route path="/audience-segments" component={AudienceSegments} />
       <Route component={NotFound} />
     </Switch>
   );
