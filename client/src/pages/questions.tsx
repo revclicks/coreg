@@ -215,19 +215,19 @@ export default function Questions() {
                         <div className="flex items-center justify-between">
                           <span className="text-slate-600">EPI:</span>
                           <span className="font-medium text-green-600">
-                            ${(question.earningsPerImpression || 0).toFixed(3)}
+                            ${(Number(question.earningsPerImpression) || 0).toFixed(3)}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-slate-600">Response Rate:</span>
                           <span className="font-medium text-blue-600">
-                            {((question.responseRate || 0) * 100).toFixed(1)}%
+                            {((Number(question.responseRate) || 0) * 100).toFixed(1)}%
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-slate-600">Impressions:</span>
                           <span className="font-medium text-slate-700">
-                            {question.impressions || 0}
+                            {Number(question.impressions) || 0}
                           </span>
                         </div>
                       </div>
