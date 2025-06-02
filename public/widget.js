@@ -98,25 +98,20 @@
     }
 
     createContainer() {
-      // Create widget container as full-page overlay
+      // Create widget container as inline element
       this.container = document.createElement('div');
       this.container.id = 'coreg-widget';
       this.container.style.cssText = `
-        position: fixed;
-        top: 0;
-        left: 0;
         width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        z-index: 999999;
+        max-width: 600px;
+        margin: 20px auto;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
       `;
 
-      document.body.appendChild(this.container);
+      // Find the target container or append to body
+      const targetElement = document.getElementById('widget-target') || document.body;
+      targetElement.appendChild(this.container);
     }
 
     showLandingPage() {
@@ -215,7 +210,7 @@
 
     startQuestionnaire() {
       // Show the widget container
-      this.container.style.display = 'flex';
+      this.container.style.display = 'block';
       
       // Show personal info form first
       this.showPersonalInfoForm();
@@ -231,12 +226,12 @@
       
       this.container.innerHTML = `
         <!-- Blue Header -->
-        <div style="position: absolute; top: 0; left: 0; width: 100%; background: #1e3a8a; color: white; text-align: center; padding: 20px 0; font-size: 18px; font-weight: 600;">
+        <div style="background: #1e3a8a; color: white; text-align: center; padding: 20px; font-size: 18px; font-weight: 600; border-radius: 12px 12px 0 0;">
           Please Answer the Question Below
         </div>
         
         <!-- Question Card -->
-        <div style="background: white; border-radius: 12px; padding: 40px; max-width: 500px; width: 90%; margin: 0 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1);">
+        <div style="background: white; border-radius: 0 0 12px 12px; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
           <h2 style="margin: 0 0 30px 0; color: #1f2937; font-size: 24px; font-weight: 600; text-align: center; line-height: 1.4;">
             ${question.text}
           </h2>
@@ -251,12 +246,6 @@
             </p>
           </div>
         </div>
-        
-        <!-- Close button -->
-        <button onclick="document.getElementById('coreg-widget').remove()" 
-                style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 24px; cursor: pointer; color: white; font-weight: bold;">
-          ×
-        </button>
       `;
     }
 
@@ -439,12 +428,12 @@
     showPersonalInfoForm() {
       this.container.innerHTML = `
         <!-- Blue Header -->
-        <div style="position: absolute; top: 0; left: 0; width: 100%; background: #1e3a8a; color: white; text-align: center; padding: 20px 0; font-size: 18px; font-weight: 600;">
+        <div style="background: #1e3a8a; color: white; text-align: center; padding: 20px; font-size: 18px; font-weight: 600; border-radius: 12px 12px 0 0;">
           Hey Hey! Your Email Is Eligible.
         </div>
         
         <!-- Personal Info Form -->
-        <div style="background: white; border-radius: 12px; padding: 30px; max-width: 600px; width: 90%; margin: 0 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); max-height: 80vh; overflow-y: auto;">
+        <div style="background: white; border-radius: 0 0 12px 12px; padding: 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
           <form id="personal-info-form">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
               <div>
