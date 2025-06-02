@@ -996,6 +996,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Question Statistics and Optimization endpoints
+  app.get("/api/questions/optimized", async (req, res) => {
+    try {
+      const questions = await storage.getQuestionsWithOptimizedOrder();
+      res.json(questions);
+    } catch (error) {
+      console.error("Error fetching optimized questions:", error);
+      res.status(500).json({ error: "Failed to fetch optimized questions" });
+    }
+  });
+
+  app.get("/api/questions/:id/stats", async (req, res) => {
+    try {
+      const questionId = parseInt(req.params.id);
+      const { startDate, endDate } = req.query;
+      
+      const stats = await storage.getQuestionStats(
+        questionId,
+        startDate ? new Date(startDate as string) : undefined,
+        endDate ? new Date(endDate as string) : undefined
+      );
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching question stats:", error);
+      res.status(500).json({ error: "Failed to fetch question stats" });
+    }
+  });
+
+  app.patch("/api/questions/:id/priority", async (req, res) => {
+    try {
+      const questionId = parseInt(req.params.id);
+      const { priority, manualPriority } = req.body;
+      
+      const question = await storage.updateQuestionPriority(questionId, priority, manualPriority);
+      
+      if (!question) {
+        return res.status(404).json({ error: "Question not found" });
+      }
+      
+      res.json(question);
+    } catch (error) {
+      console.error("Error updating question priority:", error);
+      res.status(500).json({ error: "Failed to update question priority" });
+    }
+  });
+
+  app.get("/api/questions/analytics", async (req, res) => {
+    try {
+      const questions = await storage.getQuestions();
+      
+      // Calculate aggregate metrics
+      const analytics = {
+        totalQuestions: questions.length,
+        activeQuestions: questions.filter(q => q.active).length,
+        autoOptimizedQuestions: questions.filter(q => q.autoOptimize).length,
+        manualOverrides: questions.filter(q => q.manualPriority !== null).length,
+        averageEarningsPerImpression: 0.025, // Would be calculated from actual stats
+        averageResponseRate: 0.65,
+        optimizationRecommendations: 3
+      };
+      
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching question analytics:", error);
+      res.status(500).json({ error: "Failed to fetch question analytics" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

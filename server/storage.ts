@@ -16,7 +16,8 @@ import {
   type SegmentPerformance, type InsertSegmentPerformance,
   type AbTestExperiment, type InsertAbTestExperiment,
   type AbTestVariant, type InsertAbTestVariant,
-  type AbTestResult, type InsertAbTestResult
+  type AbTestResult, type InsertAbTestResult,
+  type QuestionStats, type InsertQuestionStats
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
@@ -100,6 +101,13 @@ export interface IStorage {
   recordAbTestResult(result: InsertAbTestResult): Promise<AbTestResult>;
   getExperimentResults(experimentId: number): Promise<AbTestResult[]>;
   getVariantMetrics(variantId: number): Promise<any>;
+
+  // Question Statistics
+  recordQuestionStats(stats: InsertQuestionStats): Promise<QuestionStats>;
+  getQuestionStats(questionId: number, startDate?: Date, endDate?: Date): Promise<QuestionStats[]>;
+  getQuestionsWithOptimizedOrder(): Promise<Question[]>;
+  updateQuestionPriority(questionId: number, priority: number, manualPriority?: number): Promise<Question | undefined>;
+  calculateQuestionMetrics(questionId: number, date: Date): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -521,6 +529,121 @@ export class DatabaseStorage implements IStorage {
       ctr: metrics.impressions > 0 ? (metrics.clicks / metrics.impressions) * 100 : 0,
       cvr: metrics.clicks > 0 ? (metrics.conversions / metrics.clicks) * 100 : 0,
       averageRevenue: metrics.conversions > 0 ? metrics.revenue / metrics.conversions : 0
+    };
+  }
+
+  // Question Statistics methods
+  async recordQuestionStats(stats: InsertQuestionStats): Promise<QuestionStats> {
+    const [created] = await db.insert(questionStats).values(stats).returning();
+    return created;
+  }
+
+  async getQuestionStats(questionId: number, startDate?: Date, endDate?: Date): Promise<QuestionStats[]> {
+    let query = db.select().from(questionStats).where(eq(questionStats.questionId, questionId));
+    
+    if (startDate && endDate) {
+      query = query.where(and(
+        eq(questionStats.questionId, questionId),
+        gte(questionStats.date, startDate),
+        lte(questionStats.date, endDate)
+      ));
+    }
+    
+    return await query.orderBy(desc(questionStats.date));
+  }
+
+  async getQuestionsWithOptimizedOrder(): Promise<Question[]> {
+    // Get questions with their latest performance metrics
+    const questionsWithStats = await db
+      .select({
+        id: questions.id,
+        text: questions.text,
+        type: questions.type,
+        options: questions.options,
+        priority: questions.priority,
+        manualPriority: questions.manualPriority,
+        autoOptimize: questions.autoOptimize,
+        active: questions.active,
+        createdAt: questions.createdAt,
+        earningsPerImpression: sql<number>`COALESCE(MAX(${questionStats.earningsPerImpression}), 0)`,
+        responseRate: sql<number>`COALESCE(MAX(${questionStats.responseRate}), 0)`,
+        impressions: sql<number>`COALESCE(SUM(${questionStats.impressions}), 0)`
+      })
+      .from(questions)
+      .leftJoin(questionStats, eq(questions.id, questionStats.questionId))
+      .where(eq(questions.active, true))
+      .groupBy(questions.id)
+      .orderBy(
+        // First by manual priority if set, then by earnings per impression
+        sql`CASE WHEN ${questions.manualPriority} IS NOT NULL THEN ${questions.manualPriority} ELSE 999 END`,
+        desc(sql<number>`COALESCE(MAX(${questionStats.earningsPerImpression}), 0)`),
+        questions.priority
+      );
+
+    return questionsWithStats as Question[];
+  }
+
+  async updateQuestionPriority(questionId: number, priority: number, manualPriority?: number): Promise<Question | undefined> {
+    const updateData: Partial<InsertQuestion> = { priority };
+    if (manualPriority !== undefined) {
+      updateData.manualPriority = manualPriority;
+    }
+
+    const [updated] = await db.update(questions)
+      .set(updateData)
+      .where(eq(questions.id, questionId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async calculateQuestionMetrics(questionId: number, date: Date): Promise<any> {
+    // Calculate metrics for a specific question on a specific date
+    const responses = await db.select()
+      .from(questionResponses)
+      .where(and(
+        eq(questionResponses.questionId, questionId),
+        gte(questionResponses.timestamp, date),
+        lte(questionResponses.timestamp, new Date(date.getTime() + 24 * 60 * 60 * 1000))
+      ));
+
+    const sessions = await db.select()
+      .from(userSessions)
+      .where(and(
+        gte(userSessions.createdAt, date),
+        lte(userSessions.createdAt, new Date(date.getTime() + 24 * 60 * 60 * 1000))
+      ));
+
+    // Calculate subsequent clicks and conversions
+    const sessionIds = responses.map(r => r.sessionId);
+    const subsequentClicks = sessionIds.length > 0 ? await db.select()
+      .from(campaignClicks)
+      .where(and(
+        sql`${campaignClicks.sessionId} IN (${sessionIds.join(',')})`,
+        gte(campaignClicks.timestamp, date)
+      )) : [];
+
+    const clickIds = subsequentClicks.map(c => c.clickId);
+    const subsequentConversions = clickIds.length > 0 ? await db.select()
+      .from(campaignConversions)
+      .where(sql`${campaignConversions.clickId} IN (${clickIds.join(',')})`) : [];
+
+    const totalRevenue = subsequentConversions.reduce((sum, conv) => 
+      sum + parseFloat(conv.revenue || '0'), 0
+    );
+
+    const impressions = sessions.length; // Simplified - sessions represent impressions
+    const responseCount = responses.length;
+    const clickCount = subsequentClicks.length;
+    const conversionCount = subsequentConversions.length;
+
+    return {
+      impressions,
+      responses: responseCount,
+      subsequentClicks: clickCount,
+      subsequentConversions: conversionCount,
+      revenue: totalRevenue,
+      earningsPerImpression: impressions > 0 ? totalRevenue / impressions : 0,
+      responseRate: impressions > 0 ? responseCount / impressions : 0
     };
   }
 }
