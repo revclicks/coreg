@@ -9,8 +9,6 @@ const navigation = [
   { name: "Audience Segments", href: "/audience-segments", icon: Users },
   { name: "A/B Testing", href: "/ab-testing", icon: Target },
   { name: "Analytics Hub", href: "/analytics-hub", icon: Activity },
-  { name: "Basic Stats", href: "/stats", icon: ChartBar },
-  { name: "Advanced Analytics", href: "/analytics", icon: TrendingUp },
   { name: "Data Collection", href: "/data", icon: Database },
 ];
 
