@@ -208,7 +208,12 @@
       `;
     }
 
-    startQuestionnaire() {
+    startQuestionnaire(email) {
+      // Store the email if provided
+      if (email) {
+        this.userEmail = email;
+      }
+      
       // Show the widget container
       this.container.style.display = 'block';
       
@@ -513,12 +518,6 @@
             </button>
           </form>
         </div>
-        
-        <!-- Close button -->
-        <button onclick="document.getElementById('coreg-widget').remove()" 
-                style="position: absolute; top: 15px; right: 20px; background: none; border: none; font-size: 24px; cursor: pointer; color: white; font-weight: bold;">
-          ×
-        </button>
       `;
       
       // Set default gender to male (as shown selected in the image)
