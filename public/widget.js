@@ -50,11 +50,10 @@
         // Create session
         await this.createSession();
         
-        // Create widget container
+        // Create widget container but don't show it yet
         this.createContainer();
         
-        // Show landing page first
-        this.showLandingPage();
+        // Don't show landing page automatically - wait for startQuestionnaire call
       } catch (error) {
         console.error('CoReg Widget Error:', error);
       }
@@ -111,7 +110,7 @@
         background: rgba(0, 0, 0, 0.8);
         z-index: 999999;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        display: flex;
+        display: none;
         flex-direction: column;
         align-items: center;
         justify-content: center;
@@ -215,7 +214,11 @@
     }
 
     startQuestionnaire() {
-      this.showCurrentQuestion();
+      // Show the widget container
+      this.container.style.display = 'flex';
+      
+      // Show landing page first
+      this.showLandingPage();
     }
 
     showCurrentQuestion() {
