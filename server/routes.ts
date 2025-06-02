@@ -925,6 +925,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // A/B Testing endpoints
+  app.get("/api/ab-tests", async (req, res) => {
+    try {
+      // Return empty array for now since storage methods aren't fully connected
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching A/B tests:", error);
+      res.status(500).json({ error: "Failed to fetch A/B tests" });
+    }
+  });
+
+  app.get("/api/ab-tests/analytics", async (req, res) => {
+    try {
+      const analytics = {
+        totalTests: 0,
+        activeTests: 0,
+        winRate: 0,
+        avgImprovement: 0
+      };
+      
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching A/B test analytics:", error);
+      res.status(500).json({ error: "Failed to fetch A/B test analytics" });
+    }
+  });
+
+  app.post("/api/ab-tests", async (req, res) => {
+    try {
+      // Create a basic experiment response for now
+      const experiment = {
+        id: Date.now(),
+        ...req.body,
+        status: 'draft',
+        createdAt: new Date().toISOString()
+      };
+      
+      res.status(201).json(experiment);
+    } catch (error) {
+      console.error("Error creating A/B test:", error);
+      res.status(500).json({ error: "Failed to create A/B test" });
+    }
+  });
+
+  app.patch("/api/ab-tests/:id/status", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { status } = req.body;
+      
+      const experiment = {
+        id,
+        status,
+        updatedAt: new Date().toISOString()
+      };
+      
+      res.json(experiment);
+    } catch (error) {
+      console.error("Error updating A/B test status:", error);
+      res.status(500).json({ error: "Failed to update A/B test status" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

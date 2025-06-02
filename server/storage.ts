@@ -2,6 +2,7 @@ import {
   questions, campaigns, sites, userSessions, questionResponses, 
   campaignClicks, campaignImpressions, campaignConversions,
   audienceSegments, userSegmentMemberships, segmentPerformance,
+  abTestExperiments, abTestVariants, abTestResults,
   type Question, type InsertQuestion,
   type Campaign, type InsertCampaign,
   type Site, type InsertSite,
@@ -12,7 +13,10 @@ import {
   type CampaignConversion, type InsertCampaignConversion,
   type AudienceSegment, type InsertAudienceSegment,
   type UserSegmentMembership, type InsertUserSegmentMembership,
-  type SegmentPerformance, type InsertSegmentPerformance
+  type SegmentPerformance, type InsertSegmentPerformance,
+  type AbTestExperiment, type InsertAbTestExperiment,
+  type AbTestVariant, type InsertAbTestVariant,
+  type AbTestResult, type InsertAbTestResult
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
@@ -451,6 +455,73 @@ export class DatabaseStorage implements IStorage {
     }
     
     return await query.orderBy(desc(segmentPerformance.date));
+  }
+
+  // A/B Testing methods
+  async getAbTestExperiments(): Promise<AbTestExperiment[]> {
+    return await db.select().from(abTestExperiments).orderBy(desc(abTestExperiments.createdAt));
+  }
+
+  async getAbTestExperiment(id: number): Promise<AbTestExperiment | undefined> {
+    const [experiment] = await db.select().from(abTestExperiments).where(eq(abTestExperiments.id, id));
+    return experiment || undefined;
+  }
+
+  async createAbTestExperiment(experiment: InsertAbTestExperiment): Promise<AbTestExperiment> {
+    const [created] = await db.insert(abTestExperiments).values(experiment).returning();
+    return created;
+  }
+
+  async updateAbTestExperiment(id: number, experiment: Partial<InsertAbTestExperiment>): Promise<AbTestExperiment | undefined> {
+    const [updated] = await db.update(abTestExperiments)
+      .set(experiment)
+      .where(eq(abTestExperiments.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteAbTestExperiment(id: number): Promise<boolean> {
+    const result = await db.delete(abTestExperiments).where(eq(abTestExperiments.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  async createAbTestVariant(variant: InsertAbTestVariant): Promise<AbTestVariant> {
+    const [created] = await db.insert(abTestVariants).values(variant).returning();
+    return created;
+  }
+
+  async getExperimentVariants(experimentId: number): Promise<AbTestVariant[]> {
+    return await db.select().from(abTestVariants).where(eq(abTestVariants.experimentId, experimentId));
+  }
+
+  async recordAbTestResult(result: InsertAbTestResult): Promise<AbTestResult> {
+    const [created] = await db.insert(abTestResults).values(result).returning();
+    return created;
+  }
+
+  async getExperimentResults(experimentId: number): Promise<AbTestResult[]> {
+    return await db.select().from(abTestResults).where(eq(abTestResults.experimentId, experimentId));
+  }
+
+  async getVariantMetrics(variantId: number): Promise<any> {
+    const results = await db.select({
+      impressions: sql<number>`sum(${abTestResults.impressions})`,
+      clicks: sql<number>`sum(${abTestResults.clicks})`,
+      conversions: sql<number>`sum(${abTestResults.conversions})`,
+      revenue: sql<number>`sum(${abTestResults.revenue})`
+    })
+    .from(abTestResults)
+    .where(eq(abTestResults.variantId, variantId))
+    .groupBy(abTestResults.variantId);
+
+    const metrics = results[0] || { impressions: 0, clicks: 0, conversions: 0, revenue: 0 };
+    
+    return {
+      ...metrics,
+      ctr: metrics.impressions > 0 ? (metrics.clicks / metrics.impressions) * 100 : 0,
+      cvr: metrics.clicks > 0 ? (metrics.conversions / metrics.clicks) * 100 : 0,
+      averageRevenue: metrics.conversions > 0 ? metrics.revenue / metrics.conversions : 0
+    };
   }
 }
 

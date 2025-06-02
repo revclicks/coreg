@@ -7,6 +7,7 @@ const navigation = [
   { name: "Campaign Manager", href: "/campaigns", icon: Megaphone },
   { name: "Site Manager", href: "/sites", icon: Globe },
   { name: "Audience Segments", href: "/audience-segments", icon: Users },
+  { name: "A/B Testing", href: "/ab-testing", icon: Target },
   { name: "Stats & Analytics", href: "/stats", icon: ChartBar },
   { name: "Advanced Analytics", href: "/analytics", icon: TrendingUp },
   { name: "Data Collection", href: "/data", icon: Database },

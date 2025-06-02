@@ -11,6 +11,7 @@ import Stats from "@/pages/stats";
 import AdvancedAnalytics from "@/pages/advanced-analytics";
 import Data from "@/pages/data";
 import AudienceSegments from "@/pages/audience-segments";
+import ABTesting from "@/pages/ab-testing";
 import Targeting from "@/pages/targeting";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/analytics" component={AdvancedAnalytics} />
       <Route path="/data" component={Data} />
       <Route path="/audience-segments" component={AudienceSegments} />
+      <Route path="/ab-testing" component={ABTesting} />
       <Route component={NotFound} />
     </Switch>
   );
