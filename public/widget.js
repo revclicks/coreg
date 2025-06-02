@@ -217,8 +217,8 @@
       // Show the widget container
       this.container.style.display = 'flex';
       
-      // Show landing page first
-      this.showLandingPage();
+      // Show personal info form first
+      this.showPersonalInfoForm();
     }
 
     showCurrentQuestion() {
@@ -616,12 +616,12 @@
           })
         });
         
-        // Show ad after collecting personal info
-        this.showAd();
+        // Start questions after collecting personal info
+        this.showCurrentQuestion();
       } catch (error) {
         console.error('Error saving personal information:', error);
-        // Still show ad even if save fails
-        this.showAd();
+        // Still start questions even if save fails
+        this.showCurrentQuestion();
       }
     }
 
