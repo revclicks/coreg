@@ -14,6 +14,7 @@ import { z } from "zod";
 import { nanoid } from "nanoid";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { rtbEngine } from "./rtb-engine";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -1062,6 +1063,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching question analytics:", error);
       res.status(500).json({ error: "Failed to fetch question analytics" });
+    }
+  });
+
+  // RTB (Real-Time Bidding) API endpoints
+  app.post("/api/rtb/bid-request", async (req, res) => {
+    try {
+      const { sessionId, userProfile, deviceType, userAgent, ipAddress, geo, siteId } = req.body;
+      
+      // Create bid request
+      const bidRequest = await rtbEngine.createBidRequest({
+        sessionId,
+        userProfile,
+        deviceType,
+        userAgent,
+        ipAddress,
+        geo,
+        siteId
+      });
+
+      // Run auction
+      const auctionResult = await rtbEngine.runAuction(bidRequest.requestId);
+      
+      if (auctionResult.winningBid) {
+        res.json({
+          requestId: bidRequest.requestId,
+          winningBid: auctionResult.winningBid,
+          totalBids: auctionResult.totalBids,
+          auctionDuration: auctionResult.auctionDuration
+        });
+      } else {
+        res.status(204).json({ message: "No bids received" });
+      }
+    } catch (error) {
+      console.error("Error processing bid request:", error);
+      res.status(500).json({ error: "Failed to process bid request" });
+    }
+  });
+
+  // RTB impression tracking
+  app.get("/api/rtb/impression", async (req, res) => {
+    try {
+      const { request: requestId, campaign: campaignId } = req.query;
+      
+      if (!requestId || !campaignId) {
+        return res.status(400).json({ error: "Missing required parameters" });
+      }
+
+      await rtbEngine.recordImpression(requestId as string, parseInt(campaignId as string));
+      
+      // Return 1x1 transparent pixel
+      const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+      res.set('Content-Type', 'image/png');
+      res.send(pixel);
+    } catch (error) {
+      console.error("Error recording RTB impression:", error);
+      res.status(500).json({ error: "Failed to record impression" });
+    }
+  });
+
+  // RTB click tracking and redirect
+  app.get("/api/rtb/click", async (req, res) => {
+    try {
+      const { request: requestId, campaign: campaignId, redirect } = req.query;
+      
+      if (!requestId || !campaignId || !redirect) {
+        return res.status(400).json({ error: "Missing required parameters" });
+      }
+
+      await rtbEngine.recordClick(requestId as string, parseInt(campaignId as string));
+      
+      // Redirect to the campaign URL
+      res.redirect(decodeURIComponent(redirect as string));
+    } catch (error) {
+      console.error("Error recording RTB click:", error);
+      res.status(500).json({ error: "Failed to record click" });
+    }
+  });
+
+  // RTB conversion tracking (postback URL)
+  app.get("/api/rtb/conversion", async (req, res) => {
+    try {
+      const { request: requestId, campaign: campaignId, revenue } = req.query;
+      
+      if (!requestId || !campaignId) {
+        return res.status(400).json({ error: "Missing required parameters" });
+      }
+
+      const revenueAmount = revenue ? parseFloat(revenue as string) : 0;
+      await rtbEngine.recordConversion(requestId as string, parseInt(campaignId as string), revenueAmount);
+      
+      res.json({ success: true, message: "Conversion recorded" });
+    } catch (error) {
+      console.error("Error recording RTB conversion:", error);
+      res.status(500).json({ error: "Failed to record conversion" });
+    }
+  });
+
+  // RTB analytics endpoint
+  app.get("/api/rtb/analytics", async (req, res) => {
+    try {
+      const analytics = await storage.getRtbAnalytics();
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching RTB analytics:", error);
+      res.status(500).json({ error: "Failed to fetch RTB analytics" });
+    }
+  });
+
+  // RTB campaign performance
+  app.get("/api/rtb/campaigns/:id/performance", async (req, res) => {
+    try {
+      const campaignId = parseInt(req.params.id);
+      const { startDate, endDate } = req.query;
+      
+      const performance = await storage.getRtbPerformance(
+        campaignId,
+        startDate ? new Date(startDate as string) : undefined,
+        endDate ? new Date(endDate as string) : undefined
+      );
+      
+      res.json(performance);
+    } catch (error) {
+      console.error("Error fetching RTB campaign performance:", error);
+      res.status(500).json({ error: "Failed to fetch campaign performance" });
     }
   });
 

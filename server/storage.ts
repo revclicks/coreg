@@ -663,6 +663,113 @@ export class DatabaseStorage implements IStorage {
       responseRate: impressions > 0 ? responseCount / impressions : 0
     };
   }
+
+  // RTB Operations
+  async createBidRequest(request: InsertRtbBidRequest): Promise<RtbBidRequest> {
+    const [bidRequest] = await db.insert(rtbBidRequests)
+      .values(request)
+      .returning();
+    return bidRequest;
+  }
+
+  async getBidRequest(requestId: string): Promise<RtbBidRequest | undefined> {
+    const [bidRequest] = await db.select()
+      .from(rtbBidRequests)
+      .where(eq(rtbBidRequests.requestId, requestId));
+    return bidRequest || undefined;
+  }
+
+  async createBid(bid: InsertRtbBid): Promise<RtbBid> {
+    const [newBid] = await db.insert(rtbBids)
+      .values(bid)
+      .returning();
+    return newBid;
+  }
+
+  async getBidsForRequest(requestId: string): Promise<RtbBid[]> {
+    return await db.select()
+      .from(rtbBids)
+      .where(eq(rtbBids.requestId, requestId))
+      .orderBy(desc(rtbBids.score));
+  }
+
+  async createAuction(auction: InsertRtbAuction): Promise<RtbAuction> {
+    const [newAuction] = await db.insert(rtbAuctions)
+      .values(auction)
+      .returning();
+    return newAuction;
+  }
+
+  async getAuction(requestId: string): Promise<RtbAuction | undefined> {
+    const [auction] = await db.select()
+      .from(rtbAuctions)
+      .where(eq(rtbAuctions.requestId, requestId));
+    return auction || undefined;
+  }
+
+  async updateAuctionResult(requestId: string, updates: Partial<RtbAuction>): Promise<RtbAuction | undefined> {
+    const [updated] = await db.update(rtbAuctions)
+      .set(updates)
+      .where(eq(rtbAuctions.requestId, requestId))
+      .returning();
+    return updated || undefined;
+  }
+
+  async recordRtbPerformance(performance: InsertRtbCampaignPerformance): Promise<RtbCampaignPerformance> {
+    const [newPerformance] = await db.insert(rtbCampaignPerformance)
+      .values(performance)
+      .returning();
+    return newPerformance;
+  }
+
+  async getRtbPerformance(campaignId: number, startDate?: Date, endDate?: Date): Promise<RtbCampaignPerformance[]> {
+    let query = db.select().from(rtbCampaignPerformance)
+      .where(eq(rtbCampaignPerformance.campaignId, campaignId));
+
+    if (startDate) {
+      query = query.where(and(
+        eq(rtbCampaignPerformance.campaignId, campaignId),
+        gte(rtbCampaignPerformance.date, startDate)
+      ));
+    }
+
+    if (endDate) {
+      query = query.where(and(
+        eq(rtbCampaignPerformance.campaignId, campaignId),
+        gte(rtbCampaignPerformance.date, startDate || new Date(0)),
+        lte(rtbCampaignPerformance.date, endDate)
+      ));
+    }
+
+    return await query.orderBy(desc(rtbCampaignPerformance.date));
+  }
+
+  async getRtbAnalytics(): Promise<any> {
+    const totalRequests = await db.select({ count: sql`count(*)` })
+      .from(rtbBidRequests);
+
+    const totalBids = await db.select({ count: sql`count(*)` })
+      .from(rtbBids);
+
+    const totalAuctions = await db.select({ count: sql`count(*)` })
+      .from(rtbAuctions);
+
+    const avgWinRate = await db.select({
+      avgWinRate: sql`AVG(${rtbCampaignPerformance.winRate})`
+    }).from(rtbCampaignPerformance);
+
+    const totalRevenue = await db.select({
+      total: sql`SUM(${rtbCampaignPerformance.revenue})`
+    }).from(rtbCampaignPerformance);
+
+    return {
+      totalBidRequests: totalRequests[0]?.count || 0,
+      totalBids: totalBids[0]?.count || 0,
+      totalAuctions: totalAuctions[0]?.count || 0,
+      averageWinRate: parseFloat(avgWinRate[0]?.avgWinRate || '0'),
+      totalRevenue: parseFloat(totalRevenue[0]?.total || '0')
+    };
+  }
 }
 
 export const storage = new DatabaseStorage();
