@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Edit, Trash2, ArrowUpDown } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Edit, Trash2, ArrowUpDown, TrendingUp, Users, Target, DollarSign } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import AddQuestionModal from "@/components/modals/add-question-modal";
 import type { Question } from "@shared/schema";
@@ -12,9 +15,26 @@ import type { Question } from "@shared/schema";
 export default function Questions() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
+  const [optimizationMode, setOptimizationMode] = useState<'auto' | 'manual'>('auto');
 
   const { data: questions, isLoading } = useQuery<Question[]>({
     queryKey: ["/api/questions"],
+  });
+
+  const { data: optimizedQuestions } = useQuery({
+    queryKey: ["/api/questions/optimized"],
+    queryFn: async () => {
+      const response = await fetch("/api/questions/optimized");
+      return response.json();
+    },
+  });
+
+  const { data: questionAnalytics } = useQuery({
+    queryKey: ["/api/questions/analytics"],
+    queryFn: async () => {
+      const response = await fetch("/api/questions/analytics");
+      return response.json();
+    },
   });
 
   const deleteMutation = useMutation({
@@ -28,6 +48,22 @@ export default function Questions() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+    },
+  });
+
+  const updatePriorityMutation = useMutation({
+    mutationFn: async ({ questionId, priority, manualPriority }: { questionId: number; priority: number; manualPriority?: number }) => {
+      const response = await fetch(`/api/questions/${questionId}/priority`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priority, manualPriority }),
+      });
+      if (!response.ok) throw new Error("Failed to update priority");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/questions/optimized"] });
     },
   });
 
@@ -69,14 +105,80 @@ export default function Questions() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-800">Question Manager</h3>
-          <Button onClick={() => setShowAddModal(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Question
-          </Button>
+      {/* Analytics Summary Cards */}
+      {questionAnalytics && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <Target className="h-5 w-5 text-blue-500" />
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Total Questions</p>
+                  <p className="text-2xl font-bold">{questionAnalytics.totalQuestions}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <TrendingUp className="h-5 w-5 text-green-500" />
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Avg. Earnings/Impression</p>
+                  <p className="text-2xl font-bold">${questionAnalytics.averageEarningsPerImpression}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <Users className="h-5 w-5 text-purple-500" />
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Avg. Response Rate</p>
+                  <p className="text-2xl font-bold">{(questionAnalytics.averageResponseRate * 100).toFixed(1)}%</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <DollarSign className="h-5 w-5 text-orange-500" />
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Auto-Optimized</p>
+                  <p className="text-2xl font-bold">{questionAnalytics.autoOptimizedQuestions}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+      )}
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg font-semibold">Question Performance Manager</CardTitle>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <label className="text-sm font-medium">Optimization Mode:</label>
+                <Select value={optimizationMode} onValueChange={(value: 'auto' | 'manual') => setOptimizationMode(value)}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto</SelectItem>
+                    <SelectItem value="manual">Manual</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button onClick={() => setShowAddModal(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Question
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
         <CardContent className="p-6">
           <div className="overflow-x-auto">
             <Table>
@@ -85,20 +187,86 @@ export default function Questions() {
                   <TableHead>Priority</TableHead>
                   <TableHead>Question</TableHead>
                   <TableHead>Type</TableHead>
+                  <TableHead>Performance Metrics</TableHead>
+                  <TableHead>Optimization</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {questions?.map((question) => (
+                {(optimizationMode === 'auto' ? optimizedQuestions : questions)?.map((question: any) => (
                   <TableRow key={question.id}>
                     <TableCell>
-                      <Badge className={getPriorityColor(question.priority)}>
-                        {question.priority}
-                      </Badge>
+                      <div className="flex items-center space-x-2">
+                        <Badge className={getPriorityColor(question.priority)}>
+                          {question.priority}
+                        </Badge>
+                        {question.manualPriority && (
+                          <Badge variant="outline" className="text-xs">
+                            Manual: {question.manualPriority}
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell className="font-medium">{question.text}</TableCell>
-                    <TableCell className="capitalize">{question.type.replace('_', ' ')}</TableCell>
+                    <TableCell className="font-medium max-w-xs truncate">{question.text}</TableCell>
+                    <TableCell className="capitalize">{question.type?.replace('_', ' ')}</TableCell>
+                    <TableCell>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">EPI:</span>
+                          <span className="font-medium text-green-600">
+                            ${(question.earningsPerImpression || 0).toFixed(3)}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">Response Rate:</span>
+                          <span className="font-medium text-blue-600">
+                            {((question.responseRate || 0) * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-600">Impressions:</span>
+                          <span className="font-medium text-slate-700">
+                            {question.impressions || 0}
+                          </span>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={question.autoOptimize}
+                            onCheckedChange={(checked) => {
+                              updatePriorityMutation.mutate({
+                                questionId: question.id,
+                                priority: question.priority,
+                                manualPriority: checked ? null : question.priority
+                              });
+                            }}
+                          />
+                          <span className="text-xs text-slate-600">Auto-optimize</span>
+                        </div>
+                        {!question.autoOptimize && (
+                          <Input
+                            type="number"
+                            placeholder="Manual priority"
+                            className="w-20 h-8 text-xs"
+                            defaultValue={question.manualPriority || ''}
+                            onBlur={(e) => {
+                              const value = parseInt(e.target.value);
+                              if (value && value !== question.manualPriority) {
+                                updatePriorityMutation.mutate({
+                                  questionId: question.id,
+                                  priority: question.priority,
+                                  manualPriority: value
+                                });
+                              }
+                            }}
+                          />
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={question.active ? "default" : "secondary"}>
                         {question.active ? "Active" : "Inactive"}
@@ -120,9 +288,6 @@ export default function Questions() {
                           disabled={deleteMutation.isPending}
                         >
                           <Trash2 className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <ArrowUpDown className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
