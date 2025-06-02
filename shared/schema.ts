@@ -245,6 +245,51 @@ export const rtbAuctions = pgTable("rtb_auctions", {
 });
 
 // RTB Campaign Performance table
+// User Interaction Tracking table
+export const userInteractions = pgTable("user_interactions", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  userId: text("user_id"),
+  interactionType: text("interaction_type").notNull(), // question_view, question_answer, question_skip, ad_view, ad_click, form_abandon
+  questionId: integer("question_id").references(() => questions.id),
+  campaignId: integer("campaign_id").references(() => campaigns.id),
+  responseTime: integer("response_time"), // milliseconds
+  answer: text("answer"),
+  metadata: jsonb("metadata"), // additional context data
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
+// Personalization Hints table
+export const personalizationHints = pgTable("personalization_hints", {
+  id: serial("id").primaryKey(),
+  hintType: text("hint_type").notNull(), // question_optimization, targeting_suggestion, campaign_improvement, user_behavior_insight
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  priority: text("priority").notNull(), // high, medium, low
+  category: text("category").notNull(), // performance, targeting, engagement, conversion
+  targetEntity: text("target_entity"), // question, campaign, segment
+  targetEntityId: integer("target_entity_id"),
+  actionable: boolean("actionable").default(true),
+  implemented: boolean("implemented").default(false),
+  impact: text("impact"), // estimated impact description
+  confidence: decimal("confidence", { precision: 3, scale: 2 }), // 0.00 to 1.00
+  dataPoints: integer("data_points").notNull(), // number of data points supporting this hint
+  createdAt: timestamp("created_at").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+});
+
+// User Behavior Patterns table
+export const userBehaviorPatterns = pgTable("user_behavior_patterns", {
+  id: serial("id").primaryKey(),
+  patternType: text("pattern_type").notNull(), // quick_responder, careful_reader, skipper, engaged_user
+  description: text("description").notNull(),
+  criteria: jsonb("criteria"), // JSON with pattern matching criteria
+  frequency: integer("frequency").default(0), // how often this pattern occurs
+  avgResponseTime: integer("avg_response_time"), // average response time for this pattern
+  conversionRate: decimal("conversion_rate", { precision: 5, scale: 4 }), // conversion rate for this pattern
+  lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
 export const rtbCampaignPerformance = pgTable("rtb_campaign_performance", {
   id: serial("id").primaryKey(),
   campaignId: integer("campaign_id").notNull().references(() => campaigns.id),
@@ -433,6 +478,28 @@ export const rtbCampaignPerformanceRelations = relations(rtbCampaignPerformance,
   }),
 }));
 
+export const userInteractionsRelations = relations(userInteractions, ({ one }) => ({
+  question: one(questions, {
+    fields: [userInteractions.questionId],
+    references: [questions.id],
+  }),
+  campaign: one(campaigns, {
+    fields: [userInteractions.campaignId],
+    references: [campaigns.id],
+  }),
+}));
+
+export const personalizationHintsRelations = relations(personalizationHints, ({ one }) => ({
+  question: one(questions, {
+    fields: [personalizationHints.targetEntityId],
+    references: [questions.id],
+  }),
+  campaign: one(campaigns, {
+    fields: [personalizationHints.targetEntityId],
+    references: [campaigns.id],
+  }),
+}));
+
 // Insert schemas
 export const insertQuestionSchema = createInsertSchema(questions).omit({
   id: true,
@@ -475,6 +542,21 @@ export const insertCampaignConversionSchema = createInsertSchema(campaignConvers
   timestamp: true,
 });
 
+export const insertUserInteractionSchema = createInsertSchema(userInteractions).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertPersonalizationHintSchema = createInsertSchema(personalizationHints).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserBehaviorPatternSchema = createInsertSchema(userBehaviorPatterns).omit({
+  id: true,
+  lastUpdated: true,
+});
+
 // Types
 export type Question = typeof questions.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
@@ -499,6 +581,15 @@ export type InsertCampaignImpression = z.infer<typeof insertCampaignImpressionSc
 
 export type CampaignConversion = typeof campaignConversions.$inferSelect;
 export type InsertCampaignConversion = z.infer<typeof insertCampaignConversionSchema>;
+
+export type UserInteraction = typeof userInteractions.$inferSelect;
+export type InsertUserInteraction = z.infer<typeof insertUserInteractionSchema>;
+
+export type PersonalizationHint = typeof personalizationHints.$inferSelect;
+export type InsertPersonalizationHint = z.infer<typeof insertPersonalizationHintSchema>;
+
+export type UserBehaviorPattern = typeof userBehaviorPatterns.$inferSelect;
+export type InsertUserBehaviorPattern = z.infer<typeof insertUserBehaviorPatternSchema>;
 
 export const insertAudienceSegmentSchema = createInsertSchema(audienceSegments).omit({
   id: true,

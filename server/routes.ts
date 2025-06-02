@@ -1268,6 +1268,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Personalization Engine API endpoints
+  app.post("/api/personalization/track", async (req, res) => {
+    try {
+      const { sessionId, userId, deviceType, userAgent, siteId, event } = req.body;
+      
+      const context = { sessionId, userId, deviceType, userAgent, siteId };
+      await personalizationEngine.trackInteraction(context, event);
+      
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Error tracking interaction:", error);
+      res.status(500).json({ error: "Failed to track interaction" });
+    }
+  });
+
+  app.get("/api/personalization/hints", async (req, res) => {
+    try {
+      const hints = await personalizationEngine.getActiveHints();
+      res.json(hints);
+    } catch (error) {
+      console.error("Error fetching personalization hints:", error);
+      res.status(500).json({ error: "Failed to fetch hints" });
+    }
+  });
+
+  app.patch("/api/personalization/hints/:id/implement", async (req, res) => {
+    try {
+      const hintId = parseInt(req.params.id);
+      await personalizationEngine.markHintImplemented(hintId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error implementing hint:", error);
+      res.status(500).json({ error: "Failed to implement hint" });
+    }
+  });
+
+  app.get("/api/personalization/session/:sessionId/analysis", async (req, res) => {
+    try {
+      const { sessionId } = req.params;
+      const analysis = await personalizationEngine.getSessionAnalysis(sessionId);
+      res.json(analysis);
+    } catch (error) {
+      console.error("Error fetching session analysis:", error);
+      res.status(500).json({ error: "Failed to fetch session analysis" });
+    }
+  });
+
+  app.post("/api/personalization/generate-targeting", async (req, res) => {
+    try {
+      await personalizationEngine.generateTargetingSuggestions();
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error generating targeting suggestions:", error);
+      res.status(500).json({ error: "Failed to generate targeting suggestions" });
+    }
+  });
+
+  app.post("/api/personalization/identify-patterns", async (req, res) => {
+    try {
+      await personalizationEngine.identifyBehaviorPatterns();
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error identifying behavior patterns:", error);
+      res.status(500).json({ error: "Failed to identify behavior patterns" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
