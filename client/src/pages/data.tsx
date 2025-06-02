@@ -4,15 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Download, Filter, ChevronDown, ChevronRight, Users, Activity, Smartphone, Monitor } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Download, Filter, ChevronDown, ChevronRight, ChevronLeft, Users, Activity, Smartphone, Monitor } from "lucide-react";
 
 export default function Data() {
   const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   const { data: collectionData, isLoading } = useQuery({
-    queryKey: ["/api/data-collection"],
+    queryKey: ["/api/data-collection", currentPage, pageSize],
     queryFn: async () => {
-      const response = await fetch(`/api/data-collection`);
+      const response = await fetch(`/api/data-collection?page=${currentPage}&limit=${pageSize}`);
       return response.json();
     },
   });
@@ -200,6 +203,90 @@ export default function Data() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {!isLoading && collectionData?.sessions?.length > 0 && (
+            <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200">
+              <div className="flex items-center space-x-6 text-sm text-muted-foreground">
+                <div className="flex items-center space-x-2">
+                  <span>Show:</span>
+                  <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(parseInt(value))}>
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="100">100</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <span>per page</span>
+                </div>
+                <div>
+                  Showing {((currentPage - 1) * pageSize) + 1} to {Math.min(currentPage * pageSize, collectionData?.total || 0)} of {collectionData?.total || 0} entries
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                
+                <div className="flex items-center space-x-1">
+                  {[...Array(Math.ceil((collectionData?.total || 0) / pageSize))].map((_, i) => {
+                    const pageNum = i + 1;
+                    const totalPages = Math.ceil((collectionData?.total || 0) / pageSize);
+                    
+                    // Show first page, last page, current page, and pages around current
+                    if (
+                      pageNum === 1 ||
+                      pageNum === totalPages ||
+                      (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                    ) {
+                      return (
+                        <Button
+                          key={pageNum}
+                          variant={currentPage === pageNum ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {pageNum}
+                        </Button>
+                      );
+                    } else if (
+                      pageNum === currentPage - 2 ||
+                      pageNum === currentPage + 2
+                    ) {
+                      return (
+                        <span key={pageNum} className="px-2 text-muted-foreground">
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage >= Math.ceil((collectionData?.total || 0) / pageSize)}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

@@ -581,12 +581,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       };
 
+      // Handle pagination
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = (page - 1) * limit;
+      
+      // Apply pagination to sessions
+      const totalSessions = formattedSessions.length;
+      const paginatedSessions = formattedSessions.slice(offset, offset + limit);
+
       res.json({
-        sessions: formattedSessions,
+        sessions: paginatedSessions,
         analytics,
-        page: 1,
-        limit: 100,
-        total: formattedSessions.length
+        page,
+        limit,
+        total: totalSessions
       });
     } catch (error) {
       console.error('Error fetching data collection:', error);
