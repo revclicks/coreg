@@ -1,11 +1,24 @@
 (function() {
   'use strict';
 
-  // Extract site code from script URL
+  // Extract site code from script data attribute or URL
   const scripts = document.getElementsByTagName('script');
-  const currentScript = scripts[scripts.length - 1];
-  const scriptSrc = currentScript.src;
-  const siteCode = scriptSrc.match(/sites\/([^.]+)\.js/)?.[1];
+  let siteCode = null;
+  
+  // Try to get site code from data attribute first
+  for (let script of scripts) {
+    if (script.getAttribute('data-site')) {
+      siteCode = script.getAttribute('data-site');
+      break;
+    }
+  }
+  
+  // Fallback to URL extraction if no data attribute found
+  if (!siteCode) {
+    const currentScript = scripts[scripts.length - 1];
+    const scriptSrc = currentScript.src;
+    siteCode = scriptSrc.match(/sites\/([^.]+)\.js/)?.[1];
+  }
 
   if (!siteCode) {
     console.error('CoReg: Invalid site code');
