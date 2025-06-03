@@ -7,7 +7,7 @@ import {
   insertUserSessionSchema, insertQuestionResponseSchema, insertCampaignClickSchema,
   insertAudienceSegmentSchema,
   questions, campaigns, sites, userSessions, questionResponses, campaignImpressions, campaignClicks, campaignConversions,
-  audienceSegments, userSegmentMemberships
+  audienceSegments, userSegmentMemberships, questionImpressions
 } from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
@@ -1175,17 +1175,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/questions/analytics", async (req, res) => {
     try {
-      const questions = await storage.getQuestions();
+      const allQuestions = await storage.getQuestions();
+      
+      // Calculate real metrics for each question
+      const questionMetrics = await Promise.all(
+        allQuestions.map(async (question) => {
+          // Get impressions for this question
+          const impressions = await db.select().from(questionImpressions).where(eq(questionImpressions.questionId, question.id));
+          
+          // Get responses for this question
+          const responses = await db.select().from(questionResponses).where(eq(questionResponses.questionId, question.id));
+          
+          // Calculate metrics
+          const impressionCount = impressions.length;
+          const responseCount = responses.length;
+          const responseRate = impressionCount > 0 ? responseCount / impressionCount : 0;
+          
+          return {
+            questionId: question.id,
+            questionText: question.text,
+            impressions: impressionCount,
+            responses: responseCount,
+            responseRate: responseRate,
+            earningsPerImpression: responseRate * 0.05, // Simple calculation
+            priority: question.priority,
+            manualPriority: question.manualPriority,
+            autoOptimize: question.autoOptimize,
+            active: question.active
+          };
+        })
+      );
       
       // Calculate aggregate metrics
+      const totalImpressions = questionMetrics.reduce((sum, q) => sum + q.impressions, 0);
+      const totalResponses = questionMetrics.reduce((sum, q) => sum + q.responses, 0);
+      const averageResponseRate = totalImpressions > 0 ? totalResponses / totalImpressions : 0;
+      const averageEPI = questionMetrics.reduce((sum, q) => sum + q.earningsPerImpression, 0) / questionMetrics.length || 0;
+      
       const analytics = {
-        totalQuestions: questions.length,
-        activeQuestions: questions.filter(q => q.active).length,
-        autoOptimizedQuestions: questions.filter(q => q.autoOptimize).length,
-        manualOverrides: questions.filter(q => q.manualPriority !== null).length,
-        averageEarningsPerImpression: 0.025, // Would be calculated from actual stats
-        averageResponseRate: 0.65,
-        optimizationRecommendations: 3
+        totalQuestions: allQuestions.length,
+        activeQuestions: allQuestions.filter(q => q.active).length,
+        autoOptimizedQuestions: allQuestions.filter(q => q.autoOptimize).length,
+        manualOverrides: allQuestions.filter(q => q.manualPriority !== null).length,
+        averageEarningsPerImpression: averageEPI.toFixed(3),
+        averageResponseRate: averageResponseRate,
+        optimizationRecommendations: 3,
+        totalImpressions: totalImpressions,
+        totalResponses: totalResponses,
+        questions: questionMetrics
       };
       
       res.json(analytics);
