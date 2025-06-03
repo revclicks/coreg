@@ -480,6 +480,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Question view tracking for impressions
+  app.post("/api/question-views", async (req, res) => {
+    try {
+      const { sessionId, questionId, timestamp } = req.body;
+      
+      if (!sessionId || !questionId) {
+        return res.status(400).json({ message: "Session ID and question ID are required" });
+      }
+
+      // Record question view as an impression
+      await db.insert(questionImpressions).values({
+        sessionId: sessionId,
+        questionId: parseInt(questionId),
+        timestamp: new Date(timestamp || Date.now())
+      });
+      
+      res.json({ success: true, message: "Question view tracked successfully" });
+    } catch (error) {
+      console.error('Error tracking question view:', error);
+      res.status(500).json({ message: "Failed to track question view" });
+    }
+  });
+
   // Email collection endpoint
   app.post("/api/collect-email", async (req, res) => {
     try {

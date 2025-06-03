@@ -221,13 +221,16 @@
       this.showPersonalInfoForm();
     }
 
-    showCurrentQuestion() {
+    async showCurrentQuestion() {
       if (this.currentQuestionIndex >= this.questions.length) {
         this.showAd();
         return;
       }
 
       const question = this.questions[this.currentQuestionIndex];
+      
+      // Track question view/impression
+      await this.trackQuestionView(question.id);
       
       this.container.innerHTML = `
         <!-- Blue Header -->
@@ -357,6 +360,22 @@
         });
       } catch (error) {
         console.error('Error saving response:', error);
+      }
+    }
+
+    async trackQuestionView(questionId) {
+      try {
+        await fetch(`${API_BASE}/api/question-views`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: sessionId,
+            questionId: questionId,
+            timestamp: new Date().toISOString()
+          })
+        });
+      } catch (error) {
+        console.error('Error tracking question view:', error);
       }
     }
 

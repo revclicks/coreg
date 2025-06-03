@@ -74,6 +74,14 @@ export const questionResponses = pgTable("question_responses", {
   timestamp: timestamp("timestamp").defaultNow(),
 });
 
+// Question impressions table
+export const questionImpressions = pgTable("question_impressions", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").references(() => userSessions.sessionId),
+  questionId: integer("question_id").references(() => questions.id),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
 // Campaign clicks table
 export const campaignClicks = pgTable("campaign_clicks", {
   id: serial("id").primaryKey(),
