@@ -307,6 +307,7 @@ export default function Campaigns() {
                   <TableHead className="font-semibold">Cost per Conv.</TableHead>
                   <TableHead className="font-semibold">Revenue</TableHead>
                   <TableHead className="font-semibold">ROAS</TableHead>
+                  <TableHead className="font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -386,6 +387,26 @@ export default function Campaigns() {
                         <span className={`font-medium ${roas > 100 ? 'text-green-600' : roas > 0 ? 'text-orange-600' : 'text-red-600'}`}>
                           {roas > 0 ? `${roas.toFixed(1)}%` : '0.0%'}
                         </span>
+                      </TableCell>
+                      
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEdit(campaign)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDelete(campaign.id)}
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
