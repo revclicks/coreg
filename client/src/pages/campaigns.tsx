@@ -296,8 +296,8 @@ export default function Campaigns() {
                 <TableRow className="bg-slate-50">
                   <TableHead className="font-semibold">Campaign</TableHead>
                   <TableHead className="font-semibold">Delivery</TableHead>
-                  <TableHead className="font-semibold">Results</TableHead>
-                  <TableHead className="font-semibold">Reach</TableHead>
+                  <TableHead className="font-semibold">Daily Budget</TableHead>
+                  <TableHead className="font-semibold">Spend</TableHead>
                   <TableHead className="font-semibold">Impressions</TableHead>
                   <TableHead className="font-semibold">CPM</TableHead>
                   <TableHead className="font-semibold">CTR</TableHead>
@@ -337,11 +337,11 @@ export default function Campaigns() {
                       </TableCell>
                       
                       <TableCell className="text-center">
-                        <span className="font-medium">{stats.clicks.toLocaleString()}</span>
+                        <span className="font-medium">{formatCurrency(Number(campaign.dailyBudget) || 0)}</span>
                       </TableCell>
                       
                       <TableCell className="text-center">
-                        <span className="font-medium">{stats.impressions.toLocaleString()}</span>
+                        <span className="font-medium">{formatCurrency(stats.spend)}</span>
                       </TableCell>
                       
                       <TableCell className="text-center">
