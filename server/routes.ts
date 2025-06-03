@@ -236,7 +236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Get impressions for this campaign
           const impressions = await db.select().from(campaignImpressions).where(eq(campaignImpressions.campaignId, campaign.id));
           
-          // Get clicks for this campaign
+          // Get clicks for this campaign  
           const clicks = await db.select().from(campaignClicks).where(eq(campaignClicks.campaignId, campaign.id));
           
           // Get conversions for this campaign
