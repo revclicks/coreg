@@ -100,6 +100,7 @@ export default function Campaigns() {
       clicks: 0,
       conversions: 0,
       spend: 0,
+      revenue: 0,
       ctr: 0,
       cvr: 0
     };
@@ -292,83 +293,103 @@ export default function Campaigns() {
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Campaign</TableHead>
-                  <TableHead>Vertical</TableHead>
-                  <TableHead>Budget & Bid</TableHead>
-                  <TableHead>Impressions</TableHead>
-                  <TableHead>Clicks</TableHead>
-                  <TableHead>CTR</TableHead>
-                  <TableHead>Conversions</TableHead>
-                  <TableHead>CVR</TableHead>
-                  <TableHead>Spend</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
+                <TableRow className="bg-slate-50">
+                  <TableHead className="font-semibold">Campaign</TableHead>
+                  <TableHead className="font-semibold">Delivery</TableHead>
+                  <TableHead className="font-semibold">Results</TableHead>
+                  <TableHead className="font-semibold">Reach</TableHead>
+                  <TableHead className="font-semibold">Impressions</TableHead>
+                  <TableHead className="font-semibold">CPM</TableHead>
+                  <TableHead className="font-semibold">CTR</TableHead>
+                  <TableHead className="font-semibold">CPC</TableHead>
+                  <TableHead className="font-semibold">Conversions</TableHead>
+                  <TableHead className="font-semibold">Conv. Rate</TableHead>
+                  <TableHead className="font-semibold">Cost per Conv.</TableHead>
+                  <TableHead className="font-semibold">Revenue</TableHead>
+                  <TableHead className="font-semibold">ROAS</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {campaigns?.map((campaign) => (
-                  <TableRow key={campaign.id}>
-                    <TableCell>
-                      <div className="flex items-center">
-                        {campaign.imageUrl && (
-                          <img
-                            src={campaign.imageUrl}
-                            alt="Campaign"
-                            className="w-10 h-10 rounded object-cover mr-3"
-                          />
-                        )}
-                        <div>
-                          <p className="font-medium text-slate-800">{campaign.name}</p>
-                          <p className="text-sm text-slate-500">
-                            Age: {campaign.ageMin || 18}-{campaign.ageMax || 65}, {campaign.states || "All States"}
-                          </p>
+                {campaigns?.map((campaign) => {
+                  const stats = getCampaignStats(campaign.id);
+                  const cpm = stats.impressions > 0 ? (stats.spend / stats.impressions) * 1000 : 0;
+                  const costPerConversion = stats.conversions > 0 ? stats.spend / stats.conversions : 0;
+                  const roas = stats.spend > 0 ? (stats.revenue / stats.spend) * 100 : 0;
+                  
+                  return (
+                    <TableRow key={campaign.id} className="hover:bg-slate-50">
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-3 h-3 rounded-full ${campaign.active ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                          <div>
+                            <p className="font-medium text-slate-800">{campaign.name}</p>
+                            <p className="text-xs text-slate-500">ID: {campaign.id}</p>
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getVerticalColor(campaign.vertical)}>
-                        {campaign.vertical}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">${campaign.cpcBid}</TableCell>
-                    <TableCell>
-                      <Switch
-                        checked={campaign.active}
-                        onCheckedChange={(checked) => handleToggle(campaign.id, checked)}
-                        disabled={toggleMutation.isPending}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <p className="text-slate-800 font-medium">CTR: 3.2%</p>
-                        <p className="text-slate-500">CVR: 8.5%</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(campaign)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(campaign.id)}
-                          disabled={deleteMutation.isPending}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${
+                          campaign.active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {campaign.active ? 'Active' : 'Paused'}
+                        </span>
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <span className="font-medium">{stats.clicks.toLocaleString()}</span>
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <span className="font-medium">{stats.impressions.toLocaleString()}</span>
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <span className="font-medium">{stats.impressions.toLocaleString()}</span>
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <span className="font-medium">{formatCurrency(cpm)}</span>
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <span className={`font-medium ${stats.ctr > 0 ? 'text-blue-600' : 'text-gray-500'}`}>
+                          {stats.ctr ? `${stats.ctr.toFixed(2)}%` : '0.00%'}
+                        </span>
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <span className="font-medium">{formatCurrency(Number(campaign.cpcBid))}</span>
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <span className="font-medium">{stats.conversions.toLocaleString()}</span>
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <span className={`font-medium ${stats.cvr > 0 ? 'text-purple-600' : 'text-gray-500'}`}>
+                          {stats.cvr ? `${stats.cvr.toFixed(2)}%` : '0.00%'}
+                        </span>
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <span className="font-medium">{formatCurrency(costPerConversion)}</span>
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <span className={`font-medium ${stats.revenue > 0 ? 'text-green-600' : 'text-gray-500'}`}>
+                          {formatCurrency(stats.revenue)}
+                        </span>
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        <span className={`font-medium ${roas > 100 ? 'text-green-600' : roas > 0 ? 'text-orange-600' : 'text-red-600'}`}>
+                          {roas > 0 ? `${roas.toFixed(1)}%` : '0.0%'}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
