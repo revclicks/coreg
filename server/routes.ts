@@ -472,12 +472,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      console.log(`Selected campaign: ${selectedCampaign.id} - ${selectedCampaign.name}`);
+      console.log(`📊 CAMPAIGN AD SERVED:`, {
+        campaignId: selectedCampaign.id,
+        campaignName: selectedCampaign.name,
+        sessionId,
+        timestamp: new Date().toISOString()
+      });
 
       // Track impression
       await storage.createCampaignImpression({
         campaignId: selectedCampaign.id,
         sessionId,
+      });
+
+      console.log(`📊 CAMPAIGN IMPRESSION RECORDED:`, {
+        campaignId: selectedCampaign.id,
+        sessionId,
+        timestamp: new Date().toISOString()
       });
 
       // Generate click ID and build URL
@@ -543,10 +554,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Record question view as an impression
-      await db.insert(questionImpressions).values({
+      const impression = await db.insert(questionImpressions).values({
         sessionId: sessionId,
         questionId: parseInt(questionId),
         timestamp: new Date(timestamp || Date.now())
+      }).returning();
+
+      console.log(`📋 QUESTION IMPRESSION TRACKED:`, {
+        questionId: parseInt(questionId),
+        sessionId,
+        timestamp: new Date().toISOString(),
+        impressionId: impression[0]?.id
       });
       
       res.json({ success: true, message: "Question view tracked successfully" });
