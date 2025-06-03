@@ -513,6 +513,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timestamp: userSessions.createdAt,
           userAgent: userSessions.userAgent,
           ipAddress: userSessions.ipAddress,
+          email: userSessions.email,
+          userProfile: userSessions.userProfile,
           siteName: sites.name
         })
         .from(userSessions)
@@ -567,18 +569,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Format the data for display
       const formattedSessions = sessions.map(session => {
         const responses = responsesBySession[session.sessionId] || [];
-        const email = responses.find(r => r.questionId === 0)?.answer || 'No email provided';
-        const questionAnswers = responses.filter(r => r.questionId !== 0);
+        const questionAnswers = responses.filter((r: any) => r.questionId !== 0);
+        
+        // Get personal info from userProfile if available
+        const personalInfo = session.userProfile && typeof session.userProfile === 'object' 
+          ? (session.userProfile as any).personalInfo 
+          : null;
 
         return {
           sessionId: session.sessionId,
-          email: email,
+          email: session.email || 'No email provided',
+          firstName: personalInfo?.firstName || '',
+          lastName: personalInfo?.lastName || '',
+          phone: personalInfo?.phoneNumber || '',
+          address: personalInfo?.streetAddress || '',
+          city: personalInfo?.city || '',
+          state: personalInfo?.state || getStateFromIP(session.ipAddress),
+          zipCode: personalInfo?.zipCode || '',
+          dateOfBirth: personalInfo?.dateOfBirth || '',
+          gender: personalInfo?.gender || '',
           timestamp: session.timestamp?.toISOString() || new Date().toISOString(),
           site: session.siteName || 'Demo Site',
           device: detectDevice(session.userAgent),
-          state: getStateFromIP(session.ipAddress),
           totalQuestions: questionAnswers.length,
-          responses: questionAnswers
+          responses: questionAnswers,
+          hasPersonalInfo: !!personalInfo
         };
       });
 
