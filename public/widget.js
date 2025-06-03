@@ -510,16 +510,18 @@
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
               <div>
-                <input type="text" id="date-of-birth" placeholder="Date Of Birth (mm-dd-yyyy)" required
+                <input type="text" id="date-of-birth" placeholder="Date Of Birth (MM/DD/YYYY)" required maxlength="10"
                        style="width: 100%; padding: 15px; border: 2px solid #e5e7eb; border-radius: 25px; font-size: 16px; outline: none; box-sizing: border-box;"
                        onfocus="this.style.borderColor='#3b82f6';" onblur="this.style.borderColor='#e5e7eb';"
-                       pattern="[0-9]{2}-[0-9]{2}-[0-9]{4}">
+                       oninput="coregWidget.formatDateOfBirth(this)" 
+                       pattern="(0[1-9]|1[0-2])/(0[1-9]|[12][0-9]|3[01])/[0-9]{4}">
               </div>
               <div>
-                <input type="tel" id="phone-number" placeholder="Phone Number (000-000-0000)" required
+                <input type="tel" id="phone-number" placeholder="Phone Number (000) 000-0000" required maxlength="14"
                        style="width: 100%; padding: 15px; border: 2px solid #e5e7eb; border-radius: 25px; font-size: 16px; outline: none; box-sizing: border-box;"
                        onfocus="this.style.borderColor='#3b82f6';" onblur="this.style.borderColor='#e5e7eb';"
-                       pattern="[0-9]{3}-[0-9]{3}-[0-9]{4}">
+                       oninput="coregWidget.formatPhoneNumber(this)"
+                       pattern="\\([0-9]{3}\\) [0-9]{3}-[0-9]{4}">
               </div>
             </div>
             
@@ -578,14 +580,21 @@
       const firstName = this.container.querySelector('#first-name').value.trim();
       const lastName = this.container.querySelector('#last-name').value.trim();
       const streetAddress = this.container.querySelector('#street-address').value.trim();
+      const city = this.container.querySelector('#city').value.trim();
+      const state = this.container.querySelector('#state').value;
       const zipCode = this.container.querySelector('#zip-code').value.trim();
       const dateOfBirth = this.container.querySelector('#date-of-birth').value.trim();
       const phoneNumber = this.container.querySelector('#phone-number').value.trim();
       const consentChecked = this.container.querySelector('#consent-checkbox').checked;
       
       // Validation
-      if (!firstName || !lastName || !streetAddress || !zipCode || !dateOfBirth || !phoneNumber) {
+      if (!firstName || !lastName || !streetAddress || !city || !state || !zipCode || !dateOfBirth || !phoneNumber) {
         alert('Please fill in all required fields');
+        return;
+      }
+      
+      if (!this.selectedGender) {
+        alert('Please select your gender');
         return;
       }
       
@@ -594,17 +603,15 @@
         return;
       }
       
-      // Validate date format (mm-dd-yyyy)
-      const datePattern = /^[0-9]{2}-[0-9]{2}-[0-9]{4}$/;
-      if (!datePattern.test(dateOfBirth)) {
-        alert('Please enter date of birth in mm-dd-yyyy format');
+      // Validate date of birth
+      if (!this.validateDateOfBirth(dateOfBirth)) {
+        alert('Please enter a valid date of birth (MM/DD/YYYY). You must be at least 13 years old.');
         return;
       }
       
-      // Validate phone format (000-000-0000)
-      const phonePattern = /^[0-9]{3}-[0-9]{3}-[0-9]{4}$/;
-      if (!phonePattern.test(phoneNumber)) {
-        alert('Please enter phone number in 000-000-0000 format');
+      // Validate phone number
+      if (!this.validatePhoneNumber(phoneNumber)) {
+        alert('Please enter a valid phone number in (000) 000-0000 format');
         return;
       }
       
@@ -619,6 +626,8 @@
             firstName: firstName,
             lastName: lastName,
             streetAddress: streetAddress,
+            city: city,
+            state: state,
             zipCode: zipCode,
             gender: this.selectedGender,
             dateOfBirth: dateOfBirth,
@@ -742,6 +751,76 @@
           ×
         </button>
       `;
+    }
+
+    formatDateOfBirth(input) {
+      let value = input.value.replace(/\D/g, ''); // Remove all non-digits
+      
+      if (value.length >= 2) {
+        value = value.substring(0, 2) + '/' + value.substring(2);
+      }
+      if (value.length >= 5) {
+        value = value.substring(0, 5) + '/' + value.substring(5);
+      }
+      if (value.length > 10) {
+        value = value.substring(0, 10);
+      }
+      
+      input.value = value;
+    }
+
+    formatPhoneNumber(input) {
+      let value = input.value.replace(/\D/g, ''); // Remove all non-digits
+      
+      if (value.length >= 3) {
+        value = '(' + value.substring(0, 3) + ') ' + value.substring(3);
+      }
+      if (value.length >= 9) {
+        value = value.substring(0, 9) + '-' + value.substring(9);
+      }
+      if (value.length > 14) {
+        value = value.substring(0, 14);
+      }
+      
+      input.value = value;
+    }
+
+    validateDateOfBirth(dateStr) {
+      const datePattern = /^(0[1-9]|1[0-2])\/(0[1-9]|[12][0-9]|3[01])\/[0-9]{4}$/;
+      if (!datePattern.test(dateStr)) {
+        return false;
+      }
+      
+      const parts = dateStr.split('/');
+      const month = parseInt(parts[0], 10);
+      const day = parseInt(parts[1], 10);
+      const year = parseInt(parts[2], 10);
+      
+      // Check if date is valid
+      const date = new Date(year, month - 1, day);
+      if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+        return false;
+      }
+      
+      // Check if person is at least 13 years old
+      const today = new Date();
+      const minDate = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate());
+      if (date > minDate) {
+        return false;
+      }
+      
+      // Check if date is not too far in the past (120 years)
+      const maxDate = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate());
+      if (date < maxDate) {
+        return false;
+      }
+      
+      return true;
+    }
+
+    validatePhoneNumber(phoneStr) {
+      const phonePattern = /^\([0-9]{3}\) [0-9]{3}-[0-9]{4}$/;
+      return phonePattern.test(phoneStr);
     }
 
     getDeviceType() {
