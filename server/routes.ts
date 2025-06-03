@@ -254,6 +254,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const cvr = clickCount > 0 ? (conversionCount / clickCount) * 100 : 0;
           const spend = clickCount * Number(campaign.cpcBid || 0);
           
+          console.log(`📊 CAMPAIGN STATS CALCULATED for ${campaign.name}:`, {
+            campaignId: campaign.id,
+            impressions: impressionCount,
+            clicks: clickCount,
+            conversions: conversionCount,
+            ctr: ctr.toFixed(2) + '%',
+            spend: `$${spend.toFixed(2)}`
+          });
+          
           return {
             campaignId: campaign.id,
             campaignName: campaign.name,
