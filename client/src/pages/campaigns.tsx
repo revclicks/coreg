@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Edit, Copy, Trash2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, Edit, Copy, Trash2, Calendar as CalendarIcon, TrendingUp, Eye, MousePointer, Target, DollarSign } from "lucide-react";
+import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { queryClient } from "@/lib/queryClient";
 import AddCampaignModal from "@/components/modals/add-campaign-modal";
 import type { Campaign } from "@shared/schema";
@@ -13,9 +17,26 @@ import type { Campaign } from "@shared/schema";
 export default function Campaigns() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [dateRange, setDateRange] = useState({
+    from: subDays(new Date(), 7),
+    to: new Date()
+  });
+  const [timeframe, setTimeframe] = useState("7d");
 
   const { data: campaigns, isLoading } = useQuery<Campaign[]>({
     queryKey: ["/api/campaigns"],
+  });
+
+  const { data: campaignStats, isLoading: loadingStats } = useQuery({
+    queryKey: ["/api/campaigns/stats", dateRange],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (dateRange.from) params.append("startDate", dateRange.from.toISOString());
+      if (dateRange.to) params.append("endDate", dateRange.to.toISOString());
+      
+      const response = await fetch(`/api/campaigns/stats?${params}`);
+      return response.json();
+    }
   });
 
   const toggleMutation = useMutation({
@@ -47,6 +68,50 @@ export default function Campaigns() {
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
     },
   });
+
+  const handleTimeframeChange = (value: string) => {
+    setTimeframe(value);
+    const now = new Date();
+    let from: Date;
+    
+    switch (value) {
+      case "1d":
+        from = subDays(now, 1);
+        break;
+      case "7d":
+        from = subDays(now, 7);
+        break;
+      case "30d":
+        from = subDays(now, 30);
+        break;
+      case "90d":
+        from = subDays(now, 90);
+        break;
+      default:
+        from = subDays(now, 7);
+    }
+    
+    setDateRange({ from, to: now });
+  };
+
+  const getCampaignStats = (campaignId: number) => {
+    return campaignStats?.find((stat: any) => stat.campaignId === campaignId) || {
+      impressions: 0,
+      clicks: 0,
+      conversions: 0,
+      spend: 0,
+      ctr: 0,
+      cvr: 0
+    };
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(amount);
+  };
 
   const handleEdit = (campaign: Campaign) => {
     setEditingCampaign(campaign);
@@ -95,14 +160,134 @@ export default function Campaigns() {
 
   return (
     <div className="space-y-6">
+      {/* Date Range and Filters */}
       <Card>
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-800">Campaign Manager</h3>
-          <Button onClick={() => setShowAddModal(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Campaign
-          </Button>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Campaign Performance Dashboard</CardTitle>
+            <div className="flex items-center space-x-4">
+              <Select value={timeframe} onValueChange={handleTimeframeChange}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Timeframe" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1d">Last Day</SelectItem>
+                  <SelectItem value="7d">Last 7 Days</SelectItem>
+                  <SelectItem value="30d">Last 30 Days</SelectItem>
+                  <SelectItem value="90d">Last 90 Days</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-auto">
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {dateRange.from ? (
+                      dateRange.to ? (
+                        <>
+                          {format(dateRange.from, "LLL dd")} - {format(dateRange.to, "LLL dd")}
+                        </>
+                      ) : (
+                        format(dateRange.from, "LLL dd, y")
+                      )
+                    ) : (
+                      "Pick a date"
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    initialFocus
+                    mode="range"
+                    defaultMonth={dateRange.from}
+                    selected={dateRange}
+                    onSelect={(range) => {
+                      if (range?.from && range?.to) {
+                        setDateRange({ from: range.from, to: range.to });
+                        setTimeframe("custom");
+                      }
+                    }}
+                    numberOfMonths={2}
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              <Button onClick={() => setShowAddModal(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Campaign
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Performance Summary Cards */}
+      {campaignStats && (
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <Eye className="h-5 w-5 text-blue-500" />
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Total Impressions</p>
+                  <p className="text-2xl font-bold">{campaignStats.reduce((sum: number, stat: any) => sum + (stat.impressions || 0), 0).toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <MousePointer className="h-5 w-5 text-green-500" />
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Total Clicks</p>
+                  <p className="text-2xl font-bold">{campaignStats.reduce((sum: number, stat: any) => sum + (stat.clicks || 0), 0).toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <Target className="h-5 w-5 text-purple-500" />
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Total Conversions</p>
+                  <p className="text-2xl font-bold">{campaignStats.reduce((sum: number, stat: any) => sum + (stat.conversions || 0), 0).toLocaleString()}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <DollarSign className="h-5 w-5 text-orange-500" />
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Total Spend</p>
+                  <p className="text-2xl font-bold">{formatCurrency(campaignStats.reduce((sum: number, stat: any) => sum + (stat.spend || 0), 0))}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center space-x-2">
+                <TrendingUp className="h-5 w-5 text-red-500" />
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Avg. CTR</p>
+                  <p className="text-2xl font-bold">
+                    {campaignStats.length > 0 ? 
+                      (campaignStats.reduce((sum: number, stat: any) => sum + (stat.ctr || 0), 0) / campaignStats.length).toFixed(2) 
+                      : 0}%
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+      )}
+
+      {/* Campaign Table */}
+      <Card>
         <CardContent className="p-6">
           <div className="overflow-x-auto">
             <Table>
@@ -110,9 +295,14 @@ export default function Campaigns() {
                 <TableRow>
                   <TableHead>Campaign</TableHead>
                   <TableHead>Vertical</TableHead>
-                  <TableHead>CPC Bid</TableHead>
+                  <TableHead>Budget & Bid</TableHead>
+                  <TableHead>Impressions</TableHead>
+                  <TableHead>Clicks</TableHead>
+                  <TableHead>CTR</TableHead>
+                  <TableHead>Conversions</TableHead>
+                  <TableHead>CVR</TableHead>
+                  <TableHead>Spend</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Performance</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>

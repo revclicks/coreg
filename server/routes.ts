@@ -9,7 +9,7 @@ import {
   questions, campaigns, sites, userSessions, questionResponses, campaignImpressions, campaignClicks, campaignConversions,
   audienceSegments, userSegmentMemberships, questionImpressions
 } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { readFileSync } from "fs";
@@ -221,6 +221,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ message: "Failed to create campaign" });
       }
+    }
+  });
+
+  // Campaign statistics endpoint
+  app.get("/api/campaigns/stats", async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      const allCampaigns = await storage.getCampaigns();
+      
+      const campaignStats = await Promise.all(
+        allCampaigns.map(async (campaign) => {
+          // Get impressions for this campaign
+          const impressions = await db.select().from(campaignImpressions).where(eq(campaignImpressions.campaignId, campaign.id));
+          
+          // Get clicks for this campaign
+          const clicks = await db.select().from(campaignClicks).where(eq(campaignClicks.campaignId, campaign.id));
+          
+          // Get conversions for this campaign
+          const clickIds = clicks.map(c => c.clickId);
+          const conversions = clickIds.length > 0 ? 
+            await db.select().from(campaignConversions).where(
+              sql`${campaignConversions.clickId} IN (${clickIds.map(id => `'${id}'`).join(',')})`
+            ) : [];
+          
+          // Calculate metrics
+          const impressionCount = impressions.length;
+          const clickCount = clicks.length;
+          const conversionCount = conversions.length;
+          const ctr = impressionCount > 0 ? (clickCount / impressionCount) * 100 : 0;
+          const cvr = clickCount > 0 ? (conversionCount / clickCount) * 100 : 0;
+          const spend = clickCount * Number(campaign.cpcBid || 0);
+          
+          return {
+            campaignId: campaign.id,
+            campaignName: campaign.name,
+            impressions: impressionCount,
+            clicks: clickCount,
+            conversions: conversionCount,
+            ctr: ctr,
+            cvr: cvr,
+            spend: spend,
+            revenue: conversions.reduce((sum, conv) => sum + Number(conv.revenue || 0), 0),
+            cpcBid: Number(campaign.cpcBid || 0),
+            dailyBudget: Number(campaign.dailyBudget || 0)
+          };
+        })
+      );
+      
+      res.json(campaignStats);
+    } catch (error) {
+      console.error("Error fetching campaign stats:", error);
+      res.status(500).json({ error: "Failed to fetch campaign stats" });
     }
   });
 
