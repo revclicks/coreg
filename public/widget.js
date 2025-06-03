@@ -223,7 +223,7 @@
 
     showCurrentQuestion() {
       if (this.currentQuestionIndex >= this.questions.length) {
-        this.showEmailCapture();
+        this.showAd();
         return;
       }
 

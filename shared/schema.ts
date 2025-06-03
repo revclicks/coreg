@@ -60,6 +60,8 @@ export const userSessions = pgTable("user_sessions", {
   state: text("state"),
   userAgent: text("user_agent"),
   ipAddress: text("ip_address"),
+  email: text("email"),
+  userProfile: jsonb("user_profile"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
