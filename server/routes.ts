@@ -54,6 +54,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Partner demo page serving
+  app.get("/partner-demo.html", (req, res) => {
+    try {
+      const demoPage = readFileSync(join(process.cwd(), "public", "partner-demo.html"), "utf8");
+      res.setHeader("Content-Type", "text/html");
+      res.send(demoPage);
+    } catch (error) {
+      console.error("Error serving partner demo page:", error);
+      res.status(404).send("Partner demo page not found");
+    }
+  });
+
   // Dynamic test page with site code
   app.get("/test/:siteCode", (req, res) => {
     try {
