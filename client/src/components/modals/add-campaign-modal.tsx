@@ -359,13 +359,140 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
       <div className="text-center">
         <h3 className="text-lg font-semibold">Audience Targeting</h3>
         <p className="text-sm text-muted-foreground">
-          Choose broad targeting or specific question-based targeting
+          Configure demographic, geographic, device, and behavioral targeting options
         </p>
       </div>
 
-      {/* Targeting Mode Selection */}
+      {/* Demographics Targeting */}
       <div className="border rounded-lg p-4 bg-slate-50">
-        <h4 className="font-medium mb-3">Targeting Mode</h4>
+        <h4 className="font-medium mb-3">Demographics</h4>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField
+            control={form.control}
+            name="ageMin"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Min Age</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="18" {...field} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="ageMax"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Max Age</FormLabel>
+                <FormControl>
+                  <Input type="number" placeholder="65" {...field} />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="gender"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Gender</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="All genders" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="all">All Genders</SelectItem>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </FormItem>
+            )}
+          />
+        </div>
+      </div>
+
+      {/* Geographic Targeting */}
+      <div className="border rounded-lg p-4 bg-slate-50">
+        <h4 className="font-medium mb-3">Geographic Targeting</h4>
+        <FormField
+          control={form.control}
+          name="states"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Target States (comma-separated)</FormLabel>
+              <FormControl>
+                <Input 
+                  placeholder="CA, NY, TX, FL" 
+                  {...field} 
+                />
+              </FormControl>
+              <FormDescription>
+                Leave empty to target all states
+              </FormDescription>
+            </FormItem>
+          )}
+        />
+      </div>
+
+      {/* Device Targeting */}
+      <div className="border rounded-lg p-4 bg-slate-50">
+        <h4 className="font-medium mb-3">Device Targeting</h4>
+        <FormField
+          control={form.control}
+          name="device"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Device Type</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All devices" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="all">All Devices</SelectItem>
+                  <SelectItem value="desktop">Desktop</SelectItem>
+                  <SelectItem value="mobile">Mobile</SelectItem>
+                  <SelectItem value="tablet">Tablet</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormItem>
+          )}
+        />
+      </div>
+
+      {/* Day Parting */}
+      <div className="border rounded-lg p-4 bg-slate-50">
+        <h4 className="font-medium mb-3">Day Parting</h4>
+        <FormField
+          control={form.control}
+          name="dayParting"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Active Hours (JSON format)</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder='{"monday": [9, 17], "tuesday": [9, 17], "wednesday": [9, 17], "thursday": [9, 17], "friday": [9, 17]}' 
+                  className="min-h-[80px]"
+                  {...field} 
+                />
+              </FormControl>
+              <FormDescription>
+                Specify hours in 24-hour format. Leave empty for all-day targeting.
+              </FormDescription>
+            </FormItem>
+          )}
+        />
+      </div>
+
+      {/* Question-Based Targeting */}
+      <div className="border rounded-lg p-4 bg-slate-50">
+        <h4 className="font-medium mb-3">Question-Based Targeting</h4>
         <RadioGroup
           value={selectedQuestions.length > 0 ? 'specific' : 'broad'}
           onValueChange={(value) => {
