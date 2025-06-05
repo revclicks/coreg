@@ -228,6 +228,20 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
   });
 
   const onSubmit = (data: CampaignFormData) => {
+    console.log('Form submission started with data:', data);
+    console.log('Form errors:', form.formState.errors);
+    
+    // Check for form validation errors
+    if (Object.keys(form.formState.errors).length > 0) {
+      console.log('Form has validation errors, preventing submission');
+      toast({
+        title: "Validation Error",
+        description: "Please check all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Prepare targeting data based on selected questions
     const targeting = selectedQuestions.length > 0 ? {
       questions: selectedQuestions.map(sq => ({
@@ -241,6 +255,8 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
       ...data,
       targeting: targeting,
     };
+
+    console.log('Submitting campaign data:', campaignData);
 
     if (editingCampaign) {
       updateMutation.mutate(campaignData);
