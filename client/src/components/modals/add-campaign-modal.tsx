@@ -535,7 +535,15 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
               <FormItem>
                 <FormLabel>Min Age</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="18" {...field} />
+                  <Input 
+                    type="number" 
+                    placeholder="18" 
+                    value={field.value || ''} 
+                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                  />
                 </FormControl>
               </FormItem>
             )}
@@ -547,7 +555,15 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
               <FormItem>
                 <FormLabel>Max Age</FormLabel>
                 <FormControl>
-                  <Input type="number" placeholder="65" {...field} />
+                  <Input 
+                    type="number" 
+                    placeholder="65" 
+                    value={field.value || ''} 
+                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
+                  />
                 </FormControl>
               </FormItem>
             )}
@@ -589,7 +605,11 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
               <FormControl>
                 <Input 
                   placeholder="CA, NY, TX, FL" 
-                  {...field} 
+                  value={field.value || ''} 
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  ref={field.ref}
                 />
               </FormControl>
               <FormDescription>
