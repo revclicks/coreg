@@ -321,9 +321,45 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
           name="imageUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Ad Image URL</FormLabel>
+              <FormLabel>Ad Image</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/ad-image.jpg" {...field} />
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-4">
+                    <Input 
+                      type="file" 
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          // For demo purposes, create a local URL
+                          const imageUrl = URL.createObjectURL(file);
+                          field.onChange(imageUrl);
+                        }
+                      }}
+                      className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    />
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Or enter image URL directly:
+                  </div>
+                  <Input 
+                    placeholder="https://example.com/ad-image.jpg" 
+                    value={field.value || ""}
+                    onChange={field.onChange}
+                  />
+                  {field.value && (
+                    <div className="mt-2">
+                      <img 
+                        src={field.value} 
+                        alt="Ad preview" 
+                        className="max-w-xs max-h-32 object-contain border rounded"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
