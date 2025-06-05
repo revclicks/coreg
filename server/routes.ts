@@ -1391,6 +1391,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const responseCount = responses.length;
           const responseRate = impressionCount > 0 ? responseCount / impressionCount : 0;
           
+          console.log(`📋 QUESTION STATS CALCULATED for "${question.text}":`, {
+            questionId: question.id,
+            impressions: impressionCount,
+            responses: responseCount,
+            responseRate: (responseRate * 100).toFixed(2) + '%'
+          });
+          
           return {
             questionId: question.id,
             questionText: question.text,
@@ -1412,6 +1419,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const averageResponseRate = totalImpressions > 0 ? totalResponses / totalImpressions : 0;
       const averageEPI = questionMetrics.reduce((sum, q) => sum + q.earningsPerImpression, 0) / questionMetrics.length || 0;
       
+      console.log(`📋 TOTAL QUESTION ANALYTICS:`, {
+        totalQuestions: allQuestions.length,
+        totalImpressions,
+        totalResponses,
+        avgResponseRate: (averageResponseRate * 100).toFixed(2) + '%'
+      });
+      
       const analytics = {
         totalQuestions: allQuestions.length,
         activeQuestions: allQuestions.filter(q => q.active).length,
@@ -1422,8 +1436,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         optimizationRecommendations: 3,
         totalImpressions: totalImpressions,
         totalResponses: totalResponses,
-        questions: questionMetrics
+        questions: questionMetrics,
+        timestamp: new Date().toISOString() // Add timestamp to prevent caching
       };
+      
+      // Set cache control headers to ensure fresh data
+      res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.set('Pragma', 'no-cache');
+      res.set('Expires', '0');
       
       res.json(analytics);
     } catch (error) {
