@@ -60,7 +60,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedQuestions, setSelectedQuestions] = useState<SelectedQuestion[]>([]);
   const [targetingLogic, setTargetingLogic] = useState<"AND" | "OR">("OR");
-  const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Day parting state
@@ -73,6 +73,20 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
     saturday: new Array(24).fill(false),
     sunday: new Array(24).fill(false),
   });
+
+  // Drag state for day-parting grid
+  const [isDraggingGrid, setIsDraggingGrid] = useState(false);
+  const [dragMode, setDragMode] = useState<'select' | 'deselect'>('select');
+
+  // Global mouse event handlers for drag functionality
+  useEffect(() => {
+    const handleMouseUp = () => setIsDraggingGrid(false);
+    
+    if (isDraggingGrid) {
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => document.removeEventListener('mouseup', handleMouseUp);
+    }
+  }, [isDraggingGrid]);
 
   // Convert grid to JSON format
   const gridToJson = (grid: {[key: string]: boolean[]}) => {
@@ -358,21 +372,21 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                   <TabsContent value="upload" className="mt-4">
                     <div
                       className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                        isDragging
+                        isDraggingFile
                           ? 'border-blue-500 bg-blue-50'
                           : 'border-gray-300 hover:border-gray-400'
                       }`}
                       onDragOver={(e) => {
                         e.preventDefault();
-                        setIsDragging(true);
+                        setIsDraggingFile(true);
                       }}
                       onDragLeave={(e) => {
                         e.preventDefault();
-                        setIsDragging(false);
+                        setIsDraggingFile(false);
                       }}
                       onDrop={(e) => {
                         e.preventDefault();
-                        setIsDragging(false);
+                        setIsDraggingFile(false);
                         const files = e.dataTransfer.files;
                         if (files[0]) {
                           const imageUrl = URL.createObjectURL(files[0]);
@@ -706,11 +720,33 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                                 ? 'bg-blue-500 hover:bg-blue-600' 
                                 : 'bg-gray-100 hover:bg-gray-200'
                             }`}
-                            onClick={() => {
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              setIsDraggingGrid(true);
+                              setDragMode(isActive ? 'deselect' : 'select');
                               const newGrid = { ...dayPartingGrid };
                               newGrid[day][hour] = !newGrid[day][hour];
                               setDayPartingGrid(newGrid);
                               field.onChange(gridToJson(newGrid));
+                            }}
+                            onMouseEnter={() => {
+                              if (isDraggingGrid) {
+                                const newGrid = { ...dayPartingGrid };
+                                newGrid[day][hour] = dragMode === 'select';
+                                setDayPartingGrid(newGrid);
+                                field.onChange(gridToJson(newGrid));
+                              }
+                            }}
+                            onMouseUp={() => {
+                              setIsDraggingGrid(false);
+                            }}
+                            onClick={() => {
+                              if (!isDraggingGrid) {
+                                const newGrid = { ...dayPartingGrid };
+                                newGrid[day][hour] = !newGrid[day][hour];
+                                setDayPartingGrid(newGrid);
+                                field.onChange(gridToJson(newGrid));
+                              }
                             }}
                           />
                         ))}
