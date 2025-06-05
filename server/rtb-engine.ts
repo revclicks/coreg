@@ -157,14 +157,41 @@ export class RTBEngine {
     }
 
     // User profile targeting (based on question responses)
-    if (campaign.targeting && bidRequest.userProfile) {
+    // If campaign has no targeting, it's eligible for all users (broad targeting)
+    if (campaign.targeting && Object.keys(campaign.targeting as any).length > 0 && bidRequest.userProfile) {
       const targeting = campaign.targeting as any;
       
-      // Check if user profile matches campaign targeting
-      for (const [questionId, targetAnswers] of Object.entries(targeting)) {
-        const userResponse = bidRequest.userProfile.responses?.[questionId];
-        if (userResponse && !targetAnswers.includes(userResponse)) {
-          return false;
+      // Skip logic field if present
+      const targetingEntries = Object.entries(targeting).filter(([key]) => key !== 'logic');
+      
+      if (targetingEntries.length > 0) {
+        const logic = targeting.logic || 'AND';
+        let matches = 0;
+        
+        for (const [targetKey, targetValue] of targetingEntries) {
+          // Parse question_1_yes format
+          const questionMatch = targetKey.match(/^question_(\d+)(?:_(.+))?$/);
+          if (questionMatch) {
+            const questionId = questionMatch[1];
+            const targetAnswer = questionMatch[2];
+            const userResponse = bidRequest.userProfile.responses?.[questionId];
+            
+            if (userResponse) {
+              if (targetAnswer && userResponse === targetAnswer) {
+                matches++;
+              } else if (!targetAnswer) {
+                // User answered this question (any answer)
+                matches++;
+              }
+            }
+          }
+        }
+        
+        // Apply AND/OR logic
+        if (logic === 'AND') {
+          return matches === targetingEntries.length;
+        } else {
+          return matches > 0;
         }
       }
     }

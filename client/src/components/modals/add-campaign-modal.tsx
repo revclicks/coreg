@@ -802,15 +802,49 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
   const renderStep2 = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <h3 className="text-lg font-semibold">Question Targeting</h3>
+        <h3 className="text-lg font-semibold">Audience Targeting</h3>
         <p className="text-sm text-muted-foreground">
-          Select attributes and assign to groups
+          Choose broad targeting or specific question-based targeting
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Available Questions */}
-        <div className="lg:col-span-2">
+      {/* Targeting Mode Selection */}
+      <div className="border rounded-lg p-4 bg-slate-50">
+        <h4 className="font-medium mb-3">Targeting Mode</h4>
+        <RadioGroup
+          value={selectedQuestions.length > 0 ? 'specific' : 'broad'}
+          onValueChange={(value) => {
+            if (value === 'broad') {
+              setSelectedQuestions([]);
+            }
+          }}
+          className="space-y-3"
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="broad" id="broad-targeting" />
+            <Label htmlFor="broad-targeting" className="cursor-pointer">
+              <div>
+                <div className="font-medium">Broad Targeting</div>
+                <div className="text-sm text-muted-foreground">Target all users regardless of their question responses</div>
+              </div>
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="specific" id="specific-targeting" />
+            <Label htmlFor="specific-targeting" className="cursor-pointer">
+              <div>
+                <div className="font-medium">Question-Based Targeting</div>
+                <div className="text-sm text-muted-foreground">Target users based on specific question responses</div>
+              </div>
+            </Label>
+          </div>
+        </RadioGroup>
+      </div>
+
+      {selectedQuestions.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Available Questions */}
+          <div className="lg:col-span-2">
           <h4 className="font-medium mb-3">Available Attributes</h4>
           <div className="border rounded-lg">
             <div className="bg-gray-50 px-4 py-2 border-b">
@@ -1012,7 +1046,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
             )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 
