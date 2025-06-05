@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -38,7 +38,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertCampaignSchema, type Campaign, type Question } from "@shared/schema";
-import { Globe, Target, X, Plus, Minus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Globe, Target, X, Plus, Minus, ChevronLeft, ChevronRight, Upload, Image as ImageIcon } from "lucide-react";
 
 const campaignFormSchema = insertCampaignSchema;
 
@@ -59,6 +59,8 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedQuestions, setSelectedQuestions] = useState<SelectedQuestion[]>([]);
   const [targetingLogic, setTargetingLogic] = useState<"AND" | "OR">("OR");
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -279,26 +281,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="priority"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Priority (1-10)</FormLabel>
-              <FormControl>
-                <Input 
-                  type="number" 
-                  min="1" 
-                  max="10" 
-                  placeholder="5"
-                  {...field}
-                  onChange={(e) => field.onChange(parseInt(e.target.value) || 5)}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+
 
         <FormField
           control={form.control}
@@ -323,42 +306,89 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
             <FormItem>
               <FormLabel>Ad Image</FormLabel>
               <FormControl>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-4">
-                    <Input 
-                      type="file" 
+                <div className="w-full">
+                  <div
+                    className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                      isDragging
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDragging(true);
+                    }}
+                    onDragLeave={(e) => {
+                      e.preventDefault();
+                      setIsDragging(false);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDragging(false);
+                      const files = e.dataTransfer.files;
+                      if (files[0]) {
+                        const imageUrl = URL.createObjectURL(files[0]);
+                        field.onChange(imageUrl);
+                      }
+                    }}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
                       accept="image/*"
+                      className="hidden"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          // For demo purposes, create a local URL
                           const imageUrl = URL.createObjectURL(file);
                           field.onChange(imageUrl);
                         }
                       }}
-                      className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                     />
+                    
+                    {field.value ? (
+                      <div className="space-y-4">
+                        <img 
+                          src={field.value} 
+                          alt="Ad preview" 
+                          className="max-w-full max-h-48 mx-auto object-contain rounded"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                        <div className="text-sm text-gray-500">
+                          Click to change image
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            field.onChange("");
+                          }}
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Remove Image
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="flex flex-col items-center space-y-2">
+                          <Upload className="h-12 w-12 text-gray-400" />
+                          <div className="text-lg font-medium text-gray-700">
+                            Drop your image here
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            or click to browse files
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          Supports JPG, PNG, GIF up to 10MB
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="text-sm text-gray-500">
-                    Or enter image URL directly:
-                  </div>
-                  <Input 
-                    placeholder="https://example.com/ad-image.jpg" 
-                    value={field.value || ""}
-                    onChange={field.onChange}
-                  />
-                  {field.value && (
-                    <div className="mt-2">
-                      <img 
-                        src={field.value} 
-                        alt="Ad preview" 
-                        className="max-w-xs max-h-32 object-contain border rounded"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
                 </div>
               </FormControl>
               <FormMessage />
