@@ -1,8 +1,8 @@
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,39 +17,36 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { Upload, X, ArrowRight, ArrowLeft } from "lucide-react";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { insertCampaignSchema, type Campaign, type Question } from "@shared/schema";
-import ConversionPixelManager, { type ConversionPixel } from "@/components/conversion-pixel-manager";
+import { Globe, Target, X, Plus, Minus, ChevronLeft, ChevronRight } from "lucide-react";
 
-// Simplified form schema
-const formSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  vertical: z.string().min(1, "Vertical is required"),
-  ageMin: z.number().optional(),
-  ageMax: z.number().optional(),
-  gender: z.string().optional(),
-  device: z.string().optional(),
-  states: z.string().optional(),
-  cpcBid: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
-    message: "CPC bid must be a valid number greater than 0"
-  }),
-  dailyBudget: z.string().optional().refine((val) => !val || (!isNaN(Number(val)) && Number(val) > 0), {
-    message: "Daily budget must be a valid number greater than 0"
-  }),
-  imageUrl: z.string().optional(),
-  url: z.string().min(1, "URL is required"),
-  active: z.boolean(),
-  frequency: z.number().default(1),
-});
+const campaignFormSchema = insertCampaignSchema;
+
+type CampaignFormData = z.infer<typeof campaignFormSchema>;
+
+interface SelectedQuestion {
+  questionId: number;
+  answers: string[];
+}
 
 interface AddCampaignModalProps {
   open: boolean;
@@ -58,270 +55,148 @@ interface AddCampaignModalProps {
 }
 
 export default function AddCampaignModal({ open, onClose, editingCampaign }: AddCampaignModalProps) {
-  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(editingCampaign?.imageUrl || null);
-  const [deviceTargeting, setDeviceTargeting] = useState<'all' | 'specific'>('all');
-  const [selectedDevices, setSelectedDevices] = useState<string[]>([]);
-  const [osTargeting, setOSTargeting] = useState<'all' | 'specific'>('all');
-  const [selectedOS, setSelectedOS] = useState<string[]>([]);
-  const [selectedQuestions, setSelectedQuestions] = useState<{questionId: number, answer?: string}[]>([]);
-  const [targetingLogic, setTargetingLogic] = useState<'AND' | 'OR'>('AND');
-  
-  // Day parting state
-  const [dayPartingMode, setDayPartingMode] = useState<'all-day' | 'custom'>('all-day');
-  const [dayPartingGrid, setDayPartingGrid] = useState<Record<string, boolean[]>>({
-    monday: new Array(24).fill(false),
-    tuesday: new Array(24).fill(false),
-    wednesday: new Array(24).fill(false),
-    thursday: new Array(24).fill(false),
-    friday: new Array(24).fill(false),
-    saturday: new Array(24).fill(false),
-    sunday: new Array(24).fill(false),
-  });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragValue, setDragValue] = useState(false);
+  const [selectedQuestions, setSelectedQuestions] = useState<SelectedQuestion[]>([]);
+  const [targetingLogic, setTargetingLogic] = useState<"AND" | "OR">("OR");
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Conversion pixels state
-  const [conversionPixels, setConversionPixels] = useState<ConversionPixel[]>([]);
-
-  const { data: questions } = useQuery<Question[]>({
-    queryKey: ["/api/questions"],
-  });
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<CampaignFormData>({
+    resolver: zodResolver(campaignFormSchema),
     defaultValues: {
       name: "",
       vertical: "",
-      ageMin: undefined,
-      ageMax: undefined,
-      gender: "all",
-      device: "all",
-      states: "",
-      cpcBid: "0.00",
-      dailyBudget: "",
-      imageUrl: "",
       url: "",
+      cpcBid: "1.00",
+      imageUrl: "",
       active: true,
       frequency: 1,
+      convertOnce: false,
     },
   });
 
-  // Reset form when editing campaign changes
+  const { data: questions } = useQuery({
+    queryKey: ["/api/questions"],
+  });
+
   useEffect(() => {
     if (editingCampaign) {
-      form.reset({
-        name: editingCampaign.name,
-        vertical: editingCampaign.vertical,
-        ageMin: editingCampaign.ageMin || undefined,
-        ageMax: editingCampaign.ageMax || undefined,
-        gender: editingCampaign.gender || "all",
-        device: editingCampaign.device || "all",
-        states: editingCampaign.states || "",
-        cpcBid: editingCampaign.cpcBid?.toString() || "0.00",
-        dailyBudget: editingCampaign.dailyBudget?.toString() || "",
-        imageUrl: editingCampaign.imageUrl || "",
-        url: editingCampaign.url || "",
-        active: editingCampaign.active ?? true,
-        frequency: editingCampaign.frequency || 1,
-      });
-
-      // Reset campaign-specific state
-      const targeting = editingCampaign.targeting as any || {};
-      const existingQuestions: { questionId: number; answer?: string }[] = [];
+      const campaignData = {
+        ...editingCampaign,
+        startDate: editingCampaign.startDate ? new Date(editingCampaign.startDate).toISOString().split('T')[0] : "",
+        endDate: editingCampaign.endDate ? new Date(editingCampaign.endDate).toISOString().split('T')[0] : "",
+      };
+      form.reset(campaignData);
       
-      Object.keys(targeting).forEach(key => {
-        if (key.startsWith('question_') && targeting[key] === true && key !== 'logic') {
-          const parts = key.split('_');
-          if (parts.length >= 2) {
-            const questionId = parseInt(parts[1]);
-            const answer = parts.length > 2 ? parts[2] : undefined;
-            existingQuestions.push({ questionId, answer });
-          }
+      try {
+        const targetQuestions = editingCampaign.targetQuestions ? JSON.parse(editingCampaign.targetQuestions as string) : [];
+        if (Array.isArray(targetQuestions)) {
+          setSelectedQuestions(targetQuestions);
         }
-      });
-      
-      setSelectedQuestions(existingQuestions);
-      setTargetingLogic(targeting.logic || 'OR');
-      
-      // Set uploaded image if campaign has one
-      if (editingCampaign.imageUrl) {
-        setUploadedImage(editingCampaign.imageUrl);
+      } catch (error) {
+        console.error("Error parsing target questions:", error);
       }
     } else {
       form.reset({
         name: "",
-        vertical: "",
-        ageMin: undefined,
-        ageMax: undefined,
-        gender: "all",
-        device: "all",
-        states: "",
-        cpcBid: "0.00",
-        imageUrl: "",
+        description: "",
         url: "",
-        active: true,
-        frequency: 1,
+        imageUrl: "",
+        status: "paused",
+        bidPrice: "1.00",
+        dailyBudget: "100.00",
+        totalBudget: "1000.00",
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: "",
+        targetAudience: "all",
+        priority: 5,
       });
       setSelectedQuestions([]);
-      setTargetingLogic('OR');
-      setUploadedImage(null);
+      setCurrentStep(1);
     }
-  }, [editingCampaign, form]);
-
-  // EST time labels in 12-hour format starting at 12AM
-  const estHours = Array.from({ length: 24 }, (_, i) => {
-    const hour12 = i === 0 ? 12 : i > 12 ? i - 12 : i;
-    const ampm = i < 12 ? 'AM' : 'PM';
-    return `${hour12}${ampm}`;
-  });
-
-  const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-  const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-  const deviceOptions = [
-    { id: 'mobile', label: 'Mobile' },
-    { id: 'tablet', label: 'Tablet' },
-    { id: 'desktop', label: 'Desktop' },
-    { id: 'tv', label: 'Smart TV' },
-  ];
-
-  const osOptions = [
-    { id: 'ios', label: 'iOS' },
-    { id: 'android', label: 'Android' },
-    { id: 'windows', label: 'Windows' },
-    { id: 'macos', label: 'macOS' },
-    { id: 'linux', label: 'Linux' },
-  ];
+  }, [editingCampaign, form, open]);
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => {
-      const formData = {
-        ...data,
-        cpcBid: data.cpcBid,
-        dailyBudget: data.dailyBudget || null,
-        targeting: selectedQuestions.length > 0 ? 
-          selectedQuestions.reduce((acc, item) => ({ 
-            ...acc, 
-            [`question_${item.questionId}${item.answer ? `_${item.answer}` : ''}`]: true 
-          }), { logic: targetingLogic }) : 
-          undefined,
-        dayParting: dayPartingMode === 'all-day' ? undefined : dayPartingGrid,
-        device: deviceTargeting === 'all' ? 'all' : selectedDevices.join(','),
-        operatingSystem: osTargeting === 'all' ? 'all' : selectedOS.join(','),
-        conversionPixels: conversionPixels,
-      };
-      return apiRequest("/api/campaigns", "POST", formData);
-    },
+    mutationFn: (data: CampaignFormData) => apiRequest("/api/campaigns", "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
-      toast({ title: "Campaign created successfully" });
+      toast({
+        title: "Success",
+        description: "Campaign created successfully",
+      });
       onClose();
-      form.reset();
-      setCurrentStep(1);
     },
     onError: (error: any) => {
       toast({
-        title: "Error creating campaign",
-        description: error.message,
+        title: "Error",
+        description: error.message || "Failed to create campaign",
         variant: "destructive",
       });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: any) => {
-      const formData = {
-        ...data,
-        cpcBid: data.cpcBid,
-        dailyBudget: data.dailyBudget || null,
-        targeting: selectedQuestions.length > 0 ? 
-          selectedQuestions.reduce((acc, item) => ({ 
-            ...acc, 
-            [`question_${item.questionId}${item.answer ? `_${item.answer}` : ''}`]: true 
-          }), { logic: targetingLogic }) : 
-          undefined,
-        dayParting: dayPartingMode === 'all-day' ? undefined : dayPartingGrid,
-        device: deviceTargeting === 'all' ? 'all' : selectedDevices.join(','),
-        operatingSystem: osTargeting === 'all' ? 'all' : selectedOS.join(','),
-        conversionPixels: conversionPixels,
-      };
-      return apiRequest(`/api/campaigns/${editingCampaign!.id}`, "PATCH", formData);
-    },
+    mutationFn: (data: CampaignFormData) => 
+      apiRequest(`/api/campaigns/${editingCampaign?.id}`, "PATCH", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/campaigns"] });
-      toast({ title: "Campaign updated successfully" });
+      toast({
+        title: "Success",
+        description: "Campaign updated successfully",
+      });
       onClose();
-      setCurrentStep(1);
     },
     onError: (error: any) => {
       toast({
-        title: "Error updating campaign",
-        description: error.message,
+        title: "Error",
+        description: error.message || "Failed to update campaign",
         variant: "destructive",
       });
     },
   });
 
-  // Day parting functions
-  const handleSlotMouseDown = (day: string, hour: number) => {
-    const newValue = !dayPartingGrid[day][hour];
-    setIsDragging(true);
-    setDragValue(newValue);
-    setDayPartingGrid(prev => ({
-      ...prev,
-      [day]: prev[day].map((selected, index) => 
-        index === hour ? newValue : selected
-      )
-    }));
-  };
+  const onSubmit = (data: CampaignFormData) => {
+    const campaignData = {
+      ...data,
+      targetQuestions: selectedQuestions.length > 0 ? JSON.stringify(selectedQuestions) : null,
+      targetingLogic: selectedQuestions.length > 0 ? targetingLogic : null,
+    };
 
-  const handleSlotMouseEnter = (day: string, hour: number) => {
-    if (isDragging) {
-      setDayPartingGrid(prev => ({
-        ...prev,
-        [day]: prev[day].map((selected, index) => 
-          index === hour ? dragValue : selected
-        )
-      }));
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const toggleEntireDay = (day: string) => {
-    const allSelected = dayPartingGrid[day].every(slot => slot);
-    setDayPartingGrid(prev => ({
-      ...prev,
-      [day]: new Array(24).fill(!allSelected)
-    }));
-  };
-
-  const onSubmit = (data: z.infer<typeof formSchema>) => {
-    if (currentStep === 1) {
-      setCurrentStep(2);
-      return;
-    }
-    
     if (editingCampaign) {
-      updateMutation.mutate(data);
+      updateMutation.mutate(campaignData);
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(campaignData);
+    }
+  };
+
+  const nextStep = () => {
+    if (currentStep < 2) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
     }
   };
 
   const renderStep1 = () => (
     <div className="space-y-6">
+      <div className="text-center">
+        <h3 className="text-lg font-semibold">Campaign Details</h3>
+        <p className="text-sm text-muted-foreground">
+          Set up basic campaign information and settings
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <FormField
           control={form.control}
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Campaign Name</FormLabel>
+              <FormLabel>Campaign Name *</FormLabel>
               <FormControl>
                 <Input placeholder="Enter campaign name" {...field} />
               </FormControl>
@@ -332,44 +207,12 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
 
         <FormField
           control={form.control}
-          name="vertical"
+          name="url"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Vertical</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select vertical" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="health">Health</SelectItem>
-                  <SelectItem value="finance">Finance</SelectItem>
-                  <SelectItem value="technology">Technology</SelectItem>
-                  <SelectItem value="energy">Energy</SelectItem>
-                  <SelectItem value="travel">Travel</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <FormField
-          control={form.control}
-          name="ageMin"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Min Age</FormLabel>
+              <FormLabel>Landing URL *</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  placeholder="18"
-                  value={field.value || ""}
-                  onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                />
+                <Input placeholder="https://example.com" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -378,17 +221,12 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
 
         <FormField
           control={form.control}
-          name="ageMax"
+          name="imageUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Max Age</FormLabel>
+              <FormLabel>Image URL</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  placeholder="65"
-                  value={field.value || ""}
-                  onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                />
+                <Input placeholder="https://example.com/image.jpg" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -397,166 +235,55 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
 
         <FormField
           control={form.control}
-          name="gender"
+          name="status"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Gender</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <FormLabel>Status</FormLabel>
+              <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select gender" />
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="all">All Genders</SelectItem>
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="paused">Paused</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
             </FormItem>
           )}
         />
-      </div>
 
-      {/* Device Targeting */}
-      <div>
-        <FormLabel className="text-base">Device Targeting</FormLabel>
-        <p className="text-sm text-muted-foreground mb-3">Select device types to target</p>
-        <div className="space-y-3">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <input
-                type="radio"
-                id="device-all"
-                name="device-targeting"
-                checked={deviceTargeting === 'all'}
-                onChange={() => setDeviceTargeting('all')}
-                className="w-4 h-4"
-              />
-              <label htmlFor="device-all" className="text-sm">All Devices</label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="radio"
-                id="device-specific"
-                name="device-targeting"
-                checked={deviceTargeting === 'specific'}
-                onChange={() => setDeviceTargeting('specific')}
-                className="w-4 h-4"
-              />
-              <label htmlFor="device-specific" className="text-sm">Specific Devices</label>
-            </div>
-          </div>
-          {deviceTargeting === 'specific' && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pl-6">
-              {deviceOptions.map((device) => (
-                <div key={device.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`device-${device.id}`}
-                    checked={selectedDevices.includes(device.id)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedDevices([...selectedDevices, device.id]);
-                      } else {
-                        setSelectedDevices(selectedDevices.filter(d => d !== device.id));
-                      }
-                    }}
-                  />
-                  <label htmlFor={`device-${device.id}`} className="text-sm cursor-pointer">
-                    {device.label}
-                  </label>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Operating System Targeting */}
-      <div>
-        <FormLabel className="text-base">Operating System Targeting</FormLabel>
-        <p className="text-sm text-muted-foreground mb-3">Select operating systems to target</p>
-        <div className="space-y-3">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <input
-                type="radio"
-                id="os-all"
-                name="os-targeting"
-                checked={osTargeting === 'all'}
-                onChange={() => setOSTargeting('all')}
-                className="w-4 h-4"
-              />
-              <label htmlFor="os-all" className="text-sm">All Operating Systems</label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <input
-                type="radio"
-                id="os-specific"
-                name="os-targeting"
-                checked={osTargeting === 'specific'}
-                onChange={() => setOSTargeting('specific')}
-                className="w-4 h-4"
-              />
-              <label htmlFor="os-specific" className="text-sm">Specific Operating Systems</label>
-            </div>
-          </div>
-          {osTargeting === 'specific' && (
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pl-6">
-              {osOptions.map((os) => (
-                <div key={os.id} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`os-${os.id}`}
-                    checked={selectedOS.includes(os.id)}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedOS([...selectedOS, os.id]);
-                      } else {
-                        setSelectedOS(selectedOS.filter(o => o !== os.id));
-                      }
-                    }}
-                  />
-                  <label htmlFor={`os-${os.id}`} className="text-sm cursor-pointer">
-                    {os.label}
-                  </label>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <FormField
-        control={form.control}
-        name="states"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>State Targeting</FormLabel>
-            <FormControl>
-              <Input
-                placeholder="Enter states (e.g., CA, NY, TX) or leave blank for all states"
-                {...field}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <FormField
           control={form.control}
-          name="cpcBid"
+          name="bidPrice"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>CPC Bid ($)</FormLabel>
+              <FormLabel>Bid Price ($)</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
+                <Input type="number" step="0.01" placeholder="1.00" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="priority"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Priority (1-10)</FormLabel>
+              <FormControl>
+                <Input 
+                  type="number" 
+                  min="1" 
+                  max="10" 
+                  placeholder="5"
                   {...field}
+                  onChange={(e) => field.onChange(parseInt(e.target.value) || 5)}
                 />
               </FormControl>
               <FormMessage />
@@ -571,16 +298,8 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
             <FormItem>
               <FormLabel>Daily Budget ($)</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="Optional"
-                  {...field}
-                />
+                <Input type="number" step="0.01" placeholder="100.00" {...field} />
               </FormControl>
-              <p className="text-sm text-muted-foreground">
-                Leave empty for unlimited
-              </p>
               <FormMessage />
             </FormItem>
           )}
@@ -588,17 +307,40 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
 
         <FormField
           control={form.control}
-          name="frequency"
+          name="totalBudget"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Frequency Cap</FormLabel>
+              <FormLabel>Total Budget ($)</FormLabel>
               <FormControl>
-                <Input
-                  type="number"
-                  placeholder="1"
-                  value={field.value || ""}
-                  onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : 1)}
-                />
+                <Input type="number" step="0.01" placeholder="1000.00" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="startDate"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Start Date</FormLabel>
+              <FormControl>
+                <Input type="date" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="endDate"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>End Date</FormLabel>
+              <FormControl>
+                <Input type="date" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -608,194 +350,21 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
 
       <FormField
         control={form.control}
-        name="imageUrl"
+        name="description"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Campaign Image</FormLabel>
+            <FormLabel>Description</FormLabel>
             <FormControl>
-              <div className="space-y-4">
-                {uploadedImage ? (
-                  <div className="relative max-w-md mx-auto">
-                    <img 
-                      src={uploadedImage} 
-                      alt="Campaign preview" 
-                      className="w-full h-48 object-contain rounded-lg border bg-gray-50"
-                    />
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                      onClick={() => {
-                        setUploadedImage(null);
-                        field.onChange("");
-                      }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ) : (
-                  <label htmlFor="image-upload" className="cursor-pointer block">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="mt-4">
-                        <span className="mt-2 block text-sm font-medium text-gray-900">
-                          Upload campaign image
-                        </span>
-                        <span className="mt-1 block text-sm text-gray-500">
-                          PNG, JPG, GIF up to 10MB
-                        </span>
-                      </div>
-                    </div>
-                    <input
-                      id="image-upload"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (e) => {
-                            const result = e.target?.result as string;
-                            setUploadedImage(result);
-                            field.onChange(result);
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }}
-                    />
-                  </label>
-                )}
-              </div>
+              <Textarea 
+                placeholder="Describe your campaign..." 
+                className="min-h-[100px]"
+                {...field} 
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
-
-      <FormField
-        control={form.control}
-        name="url"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Destination URL</FormLabel>
-            <FormControl>
-              <Input
-                placeholder="https://example.com?utm_source=coreg&age={age}&firstname={firstname}"
-                {...field}
-              />
-            </FormControl>
-            <p className="text-sm text-slate-500">
-              Available variables: {"{age}"}, {"{firstname}"}, {"{lastname}"}, {"{gender}"}, {"{state}"}. ckid= will be auto-appended.
-            </p>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      {/* Day Parting Section */}
-      <div>
-        <FormLabel className="text-base">Day Parting (EST)</FormLabel>
-        <p className="text-sm text-muted-foreground mb-4">
-          Configure when this campaign should run during the week.
-        </p>
-        
-        <RadioGroup
-          value={dayPartingMode}
-          onValueChange={(value: 'all-day' | 'custom') => setDayPartingMode(value)}
-          className="mb-4"
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="all-day" id="all-day" />
-            <Label htmlFor="all-day">Run 24/7</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="custom" id="custom" />
-            <Label htmlFor="custom">Custom schedule</Label>
-          </div>
-        </RadioGroup>
-
-        {dayPartingMode === 'custom' && (
-          <div className="border rounded-lg p-4" onMouseUp={handleMouseUp}>
-            <div className="grid gap-1 text-xs" style={{gridTemplateColumns: 'auto repeat(24, 1fr)'}}>
-              {/* Header row with EST hours */}
-              <div></div>
-              {estHours.map((hour, index) => (
-                <div key={hour} className="text-center font-mono text-gray-500 text-[10px] leading-3">
-                  {hour.slice(0, 2)}
-                </div>
-              ))}
-              
-              {/* Day rows */}
-              {days.map((day, dayIndex) => (
-                <div key={day} className="contents">
-                  <div className="flex items-center justify-between pr-2 py-1">
-                    <span className="font-medium text-sm">{dayLabels[dayIndex]}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleEntireDay(day)}
-                      className="h-6 px-2 text-xs"
-                    >
-                      All
-                    </Button>
-                  </div>
-                  {dayPartingGrid[day].map((isSelected, hour) => (
-                    <button
-                      key={`${day}-${hour}`}
-                      type="button"
-                      className={`aspect-square w-full rounded-sm border transition-colors cursor-pointer ${
-                        isSelected 
-                          ? 'bg-blue-500 border-blue-600' 
-                          : 'bg-gray-100 border-gray-300 hover:bg-gray-200'
-                      }`}
-                      onMouseDown={() => handleSlotMouseDown(day, hour)}
-                      onMouseEnter={() => handleSlotMouseEnter(day, hour)}
-                    />
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <FormField
-        control={form.control}
-        name="active"
-        render={({ field }) => (
-          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-            <div className="space-y-0.5">
-              <FormLabel className="text-base">Active Campaign</FormLabel>
-              <p className="text-sm text-muted-foreground">
-                Campaign will serve ads when enabled
-              </p>
-            </div>
-            <FormControl>
-              <Switch
-                checked={field.value}
-                onCheckedChange={field.onChange}
-              />
-            </FormControl>
-          </FormItem>
-        )}
-      />
-
-      <div className="space-y-4">
-        <div>
-          <h3 className="text-lg font-medium">Conversion Tracking Pixels</h3>
-          <p className="text-sm text-muted-foreground">
-            Add third-party tracking pixels to monitor conversions across different platforms
-          </p>
-        </div>
-        
-        <ConversionPixelManager
-          pixels={conversionPixels}
-          onChange={setConversionPixels}
-        />
-      </div>
     </div>
   );
 
@@ -818,233 +387,206 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
               setSelectedQuestions([]);
             }
           }}
-          className="space-y-3"
         >
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="broad" id="broad-targeting" />
-            <Label htmlFor="broad-targeting" className="cursor-pointer">
-              <div>
-                <div className="font-medium">Broad Targeting</div>
-                <div className="text-sm text-muted-foreground">Target all users regardless of their question responses</div>
-              </div>
+            <RadioGroupItem value="broad" id="broad" />
+            <Label htmlFor="broad" className="font-normal">
+              Broad Targeting - Target all users regardless of their responses
             </Label>
           </div>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="specific" id="specific-targeting" />
-            <Label htmlFor="specific-targeting" className="cursor-pointer">
-              <div>
-                <div className="font-medium">Question-Based Targeting</div>
-                <div className="text-sm text-muted-foreground">Target users based on specific question responses</div>
-              </div>
+            <RadioGroupItem value="specific" id="specific" />
+            <Label htmlFor="specific" className="font-normal">
+              Specific Targeting - Target users based on their responses to selected questions
             </Label>
           </div>
         </RadioGroup>
       </div>
 
-      {selectedQuestions.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Available Questions */}
-          <div className="lg:col-span-2">
-            <h4 className="font-medium mb-3">Available Attributes</h4>
-            <div className="border rounded-lg">
-              <div className="bg-gray-50 px-4 py-2 border-b">
-                <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600">
-                  <div className="col-span-4">Attribute Name</div>
-                  <div className="col-span-2">Actions</div>
-                  <div className="col-span-4">Definition</div>
-                  <div className="col-span-2">ID</div>
+      {/* Question Selection for Specific Targeting */}
+      {selectedQuestions.length > 0 ? (
+        <div className="space-y-4">
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Available Questions */}
+            <div className="lg:col-span-2">
+              <h4 className="font-medium mb-3">Available Attributes</h4>
+              <div className="border rounded-lg">
+                <div className="bg-gray-50 px-4 py-2 border-b">
+                  <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600">
+                    <div className="col-span-4">Attribute Name</div>
+                    <div className="col-span-2">Actions</div>
+                    <div className="col-span-4">Definition</div>
+                    <div className="col-span-2">ID</div>
+                  </div>
                 </div>
-              </div>
-              <div className="max-h-96 overflow-y-auto">
-                {questions?.map((question) => {
-                  const isSelected = selectedQuestions.some(q => q.questionId === question.id);
-                  const selectedAnswers = selectedQuestions.filter(q => q.questionId === question.id);
-                  
-                  return (
-                    <div key={question.id} className="px-4 py-3 border-b last:border-b-0 hover:bg-gray-50">
+                <div className="max-h-96 overflow-y-auto">
+                  {questions?.map((question: Question) => {
+                    const isSelected = selectedQuestions.some(q => q.questionId === question.id);
+                    
+                    return (
+                      <div key={question.id} className="px-4 py-3 border-b last:border-b-0 hover:bg-gray-50">
                         <div className="grid grid-cols-12 gap-2 items-start">
                           <div className="col-span-4">
-                        <div className="font-medium text-sm">{question.text}</div>
-                        <div className="text-xs text-gray-500">
-                          {question.type} • Priority: {question.priority}
-                        </div>
-                      </div>
-                      <div className="col-span-2">
-                        <div className="space-y-1">
-                          {question.type === 'yes_no' ? (
-                            <>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant={selectedAnswers.some(a => a.answer === 'yes') ? "default" : "outline"}
-                                onClick={() => {
-                                  const existing = selectedQuestions.filter(q => q.questionId !== question.id || q.answer !== 'yes');
-                                  if (selectedAnswers.some(a => a.answer === 'yes')) {
-                                    setSelectedQuestions(existing);
-                                  } else {
-                                    setSelectedQuestions([...existing, { questionId: question.id, answer: 'yes' }]);
-                                  }
-                                }}
-                                className="h-7 px-2 text-xs w-full"
-                              >
-                                Yes
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant={selectedAnswers.some(a => a.answer === 'no') ? "default" : "outline"}
-                                onClick={() => {
-                                  const existing = selectedQuestions.filter(q => q.questionId !== question.id || q.answer !== 'no');
-                                  if (selectedAnswers.some(a => a.answer === 'no')) {
-                                    setSelectedQuestions(existing);
-                                  } else {
-                                    setSelectedQuestions([...existing, { questionId: question.id, answer: 'no' }]);
-                                  }
-                                }}
-                                className="h-7 px-2 text-xs w-full"
-                              >
-                                No
-                              </Button>
-                            </>
-                          ) : question.options && Array.isArray(question.options) ? (
-                            <div className="space-y-1">
-                              {question.options.map((option) => (
-                                <Button
-                                  key={option}
-                                  type="button"
-                                  size="sm"
-                                  variant={selectedAnswers.some(a => a.answer === option) ? "default" : "outline"}
-                                  onClick={() => {
-                                    const existing = selectedQuestions.filter(q => q.questionId !== question.id || q.answer !== option);
-                                    if (selectedAnswers.some(a => a.answer === option)) {
-                                      setSelectedQuestions(existing);
-                                    } else {
-                                      setSelectedQuestions([...existing, { questionId: question.id, answer: option }]);
-                                    }
-                                  }}
-                                  className="h-7 px-2 text-xs w-full text-left justify-start"
-                                >
-                                  {option}
-                                </Button>
-                              ))}
+                            <div className="font-medium text-sm">{question.text}</div>
+                            <div className="text-xs text-gray-500">
+                              {question.type} • Priority: {question.priority}
                             </div>
-                          ) : (
+                          </div>
+                          
+                          <div className="col-span-2">
                             <Button
                               type="button"
+                              variant={isSelected ? "destructive" : "outline"}
                               size="sm"
-                              variant={isSelected ? "secondary" : "outline"}
                               onClick={() => {
                                 if (isSelected) {
-                                  setSelectedQuestions(selectedQuestions.filter(q => q.questionId !== question.id));
+                                  setSelectedQuestions(prev => prev.filter(q => q.questionId !== question.id));
                                 } else {
-                                  setSelectedQuestions([...selectedQuestions, { questionId: question.id }]);
+                                  setSelectedQuestions(prev => [
+                                    ...prev,
+                                    { questionId: question.id, answers: [] }
+                                  ]);
                                 }
                               }}
-                              className="h-8 px-3 text-xs"
                             >
-                              {isSelected ? "Used" : "Use"}
+                              {isSelected ? "Remove" : "Add"}
                             </Button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="col-span-4 text-sm text-gray-600">
-                        {question.options && Array.isArray(question.options) 
-                          ? `Options: ${question.options.join(', ')}` 
-                          : 'Yes/No question'
-                        }
-                      </div>
-                      <div className="col-span-2 text-xs font-mono text-gray-500">
-                        {question.id}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Selected Questions */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-medium">Selected Attributes ({selectedQuestions.length})</h4>
-            {selectedQuestions.length > 1 && (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">Logic:</span>
-                <div className="flex border rounded-md">
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={targetingLogic === 'AND' ? "default" : "ghost"}
-                    onClick={() => setTargetingLogic('AND')}
-                    className="h-8 px-3 text-xs rounded-r-none border-r"
-                  >
-                    AND
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant={targetingLogic === 'OR' ? "default" : "ghost"}
-                    onClick={() => setTargetingLogic('OR')}
-                    className="h-8 px-3 text-xs rounded-l-none"
-                  >
-                    OR
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="border rounded-lg p-4 min-h-[200px]">
-            {selectedQuestions.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-8">
-                No attributes selected. Campaign will target all users.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {selectedQuestions.map((item, index) => {
-                  const question = questions?.find(q => q.id === item.questionId);
-                  return question ? (
-                    <div key={`${item.questionId}-${item.answer || 'any'}-${index}`} className="flex items-center justify-between p-2 bg-blue-50 rounded border">
-                      <div className="text-sm font-medium truncate flex-1 mr-2">
-                        <div className="flex items-center">
-                          {index > 0 && (
-                            <span className="text-xs bg-gray-200 px-2 py-1 rounded mr-2 font-mono">
-                              {targetingLogic}
-                            </span>
-                          )}
-                          <div>
-                            <div>{question.text}</div>
-                            {item.answer && (
-                              <div className="text-xs text-blue-600 mt-1">
-                                Answer: {item.answer}
-                              </div>
-                            )}
+                          </div>
+                          
+                          <div className="col-span-4">
+                            <div className="text-sm">{"No description available"}</div>
+                          </div>
+                          
+                          <div className="col-span-2">
+                            <div className="text-xs text-gray-500">#{question.id}</div>
                           </div>
                         </div>
+                        
+                        {isSelected && question.options && (
+                          <div className="mt-3 pl-4 border-l-2 border-blue-200">
+                            <div className="text-sm font-medium mb-2">Select target answers:</div>
+                            <div className="flex flex-wrap gap-2">
+                              {question.options.map((option: string, idx: number) => {
+                                const selectedQuestion = selectedQuestions.find(q => q.questionId === question.id);
+                                const isAnswerSelected = selectedQuestion?.answers.includes(option);
+                                
+                                return (
+                                  <Button
+                                    key={idx}
+                                    type="button"
+                                    variant={isAnswerSelected ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedQuestions(prev => prev.map(q => {
+                                        if (q.questionId === question.id) {
+                                          const newAnswers = isAnswerSelected
+                                            ? q.answers.filter(a => a !== option)
+                                            : [...q.answers, option];
+                                          return { ...q, answers: newAnswers };
+                                        }
+                                        return q;
+                                      }));
+                                    }}
+                                  >
+                                    {option}
+                                  </Button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedQuestions(selectedQuestions.filter((_, i) => i !== index))}
-                        className="h-6 w-6 p-0"
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ) : null;
-                })}
-                {selectedQuestions.length > 1 && (
-                  <div className="text-xs text-gray-500 mt-2 px-2">
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Selected Questions */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-medium">Selected Attributes ({selectedQuestions.length})</h4>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="targetingLogic" className="text-sm">Logic:</Label>
+                <Select value={targetingLogic} onValueChange={(value: "AND" | "OR") => setTargetingLogic(value)}>
+                  <SelectTrigger className="w-24">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AND">AND</SelectItem>
+                    <SelectItem value="OR">OR</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="border rounded-lg p-4 bg-slate-50">
+              {selectedQuestions.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  No attributes selected. Campaign will use broad targeting.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {selectedQuestions.map((selectedQ) => {
+                    const question = questions?.find((q: Question) => q.id === selectedQ.questionId);
+                    if (!question) return null;
+                    
+                    return (
+                      <div key={selectedQ.questionId} className="flex items-center justify-between p-3 bg-white rounded border">
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{question.text}</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {selectedQ.answers.length > 0 
+                              ? `Target answers: ${selectedQ.answers.join(', ')}`
+                              : 'All answers accepted'
+                            }
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedQuestions(prev => prev.filter(q => q.questionId !== selectedQ.questionId))}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                  
+                  <div className="text-xs text-muted-foreground mt-3 p-2 bg-blue-50 rounded">
                     {targetingLogic === 'AND' 
                       ? 'Users must match ALL selected attributes' 
                       : 'Users must match ANY of the selected attributes'
                     }
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
+        </div>
+      ) : (
+        <div className="text-center py-8 bg-slate-50 rounded-lg border-2 border-dashed">
+          <Globe className="h-12 w-12 mx-auto text-blue-500 mb-3" />
+          <h4 className="font-medium text-lg mb-2">Broad Targeting Enabled</h4>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            This campaign will target all users regardless of their questionnaire responses. 
+            Great for general awareness campaigns or when you want maximum reach.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-4"
+            onClick={() => {
+              if (questions && questions.length > 0) {
+                setSelectedQuestions([{ questionId: questions[0].id, answers: [] }]);
+              }
+            }}
+          >
+            <Target className="h-4 w-4 mr-2" />
+            Switch to Specific Targeting
+          </Button>
         </div>
       )}
     </div>
@@ -1061,39 +603,34 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {currentStep === 1 ? renderStep1() : renderStep2()}
+            {currentStep === 1 && renderStep1()}
+            {currentStep === 2 && renderStep2()}
 
-            <div className="flex justify-between pt-6">
-              {currentStep === 2 && (
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setCurrentStep(1)}
-                >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back
-                </Button>
-              )}
-              
-              <div className="flex space-x-4 ml-auto">
-                <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                >
-                  {currentStep === 1 ? (
-                    <>
-                      Next: Question Targeting
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </>
-                  ) : (
-                    createMutation.isPending || updateMutation.isPending 
-                      ? "Saving..." 
-                      : editingCampaign ? "Update Campaign" : "Create Campaign"
-                  )}
-                </Button>
+            <div className="flex justify-between pt-6 border-t">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={prevStep}
+                disabled={currentStep === 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                Previous
+              </Button>
+
+              <div className="flex gap-2">
+                {currentStep < 2 ? (
+                  <Button type="button" onClick={nextStep}>
+                    Next
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                ) : (
+                  <Button 
+                    type="submit" 
+                    disabled={createMutation.isPending || updateMutation.isPending}
+                  >
+                    {editingCampaign ? "Update Campaign" : "Create Campaign"}
+                  </Button>
+                )}
               </div>
             </div>
           </form>
