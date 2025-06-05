@@ -16,6 +16,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
 import {
   Select,
@@ -156,10 +157,18 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
   });
 
   const onSubmit = (data: CampaignFormData) => {
+    // Prepare targeting data based on selected questions
+    const targeting = selectedQuestions.length > 0 ? {
+      questions: selectedQuestions.map(sq => ({
+        questionId: sq.questionId,
+        targetAnswers: sq.answers
+      })),
+      logic: targetingLogic
+    } : null;
+
     const campaignData = {
       ...data,
-      targetQuestions: selectedQuestions.length > 0 ? JSON.stringify(selectedQuestions) : null,
-      targetingLogic: selectedQuestions.length > 0 ? targetingLogic : null,
+      targeting: targeting,
     };
 
     if (editingCampaign) {
@@ -305,42 +314,16 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="totalBudget"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Total Budget ($)</FormLabel>
-              <FormControl>
-                <Input type="number" step="0.01" placeholder="1000.00" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+
 
         <FormField
           control={form.control}
-          name="startDate"
+          name="imageUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Start Date</FormLabel>
+              <FormLabel>Ad Image URL</FormLabel>
               <FormControl>
-                <Input type="date" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="endDate"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>End Date</FormLabel>
-              <FormControl>
-                <Input type="date" {...field} />
+                <Input placeholder="https://example.com/ad-image.jpg" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -353,14 +336,17 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
         name="description"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Description</FormLabel>
+            <FormLabel>Campaign Description</FormLabel>
             <FormControl>
               <Textarea 
-                placeholder="Describe your campaign..." 
+                placeholder="Internal description for campaign management and tracking purposes..." 
                 className="min-h-[100px]"
                 {...field} 
               />
             </FormControl>
+            <FormDescription>
+              This description is for internal use only - it helps identify and manage the campaign but is not shown to users.
+            </FormDescription>
             <FormMessage />
           </FormItem>
         )}
