@@ -845,25 +845,25 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Available Questions */}
           <div className="lg:col-span-2">
-          <h4 className="font-medium mb-3">Available Attributes</h4>
-          <div className="border rounded-lg">
-            <div className="bg-gray-50 px-4 py-2 border-b">
-              <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600">
-                <div className="col-span-4">Attribute Name</div>
-                <div className="col-span-2">Actions</div>
-                <div className="col-span-4">Definition</div>
-                <div className="col-span-2">ID</div>
+            <h4 className="font-medium mb-3">Available Attributes</h4>
+            <div className="border rounded-lg">
+              <div className="bg-gray-50 px-4 py-2 border-b">
+                <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600">
+                  <div className="col-span-4">Attribute Name</div>
+                  <div className="col-span-2">Actions</div>
+                  <div className="col-span-4">Definition</div>
+                  <div className="col-span-2">ID</div>
+                </div>
               </div>
-            </div>
-            <div className="max-h-96 overflow-y-auto">
-              {questions?.map((question) => {
-                const isSelected = selectedQuestions.some(q => q.questionId === question.id);
-                const selectedAnswers = selectedQuestions.filter(q => q.questionId === question.id);
-                
-                return (
-                  <div key={question.id} className="px-4 py-3 border-b last:border-b-0 hover:bg-gray-50">
-                    <div className="grid grid-cols-12 gap-2 items-start">
-                      <div className="col-span-4">
+              <div className="max-h-96 overflow-y-auto">
+                {questions?.map((question) => {
+                  const isSelected = selectedQuestions.some(q => q.questionId === question.id);
+                  const selectedAnswers = selectedQuestions.filter(q => q.questionId === question.id);
+                  
+                  return (
+                    <div key={question.id} className="px-4 py-3 border-b last:border-b-0 hover:bg-gray-50">
+                        <div className="grid grid-cols-12 gap-2 items-start">
+                          <div className="col-span-4">
                         <div className="font-medium text-sm">{question.text}</div>
                         <div className="text-xs text-gray-500">
                           {question.type} • Priority: {question.priority}
