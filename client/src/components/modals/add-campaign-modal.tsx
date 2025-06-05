@@ -62,6 +62,54 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
   const [targetingLogic, setTargetingLogic] = useState<"AND" | "OR">("OR");
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Day parting state
+  const [dayPartingGrid, setDayPartingGrid] = useState<{[key: string]: boolean[]}>({
+    monday: new Array(24).fill(false),
+    tuesday: new Array(24).fill(false),
+    wednesday: new Array(24).fill(false),
+    thursday: new Array(24).fill(false),
+    friday: new Array(24).fill(false),
+    saturday: new Array(24).fill(false),
+    sunday: new Array(24).fill(false),
+  });
+
+  // Convert grid to JSON format
+  const gridToJson = (grid: {[key: string]: boolean[]}) => {
+    const result: {[key: string]: number[]} = {};
+    Object.entries(grid).forEach(([day, hours]) => {
+      const activeHours: number[] = [];
+      for (let i = 0; i < hours.length; i++) {
+        if (hours[i]) activeHours.push(i);
+      }
+      if (activeHours.length > 0) {
+        result[day] = activeHours;
+      }
+    });
+    return Object.keys(result).length > 0 ? JSON.stringify(result) : "";
+  };
+
+  // Convert JSON to grid format
+  const jsonToGrid = (jsonStr: string) => {
+    try {
+      if (!jsonStr) return dayPartingGrid;
+      const parsed = JSON.parse(jsonStr);
+      const newGrid = { ...dayPartingGrid };
+      Object.entries(newGrid).forEach(([day, hours]) => {
+        hours.fill(false);
+        if (parsed[day] && Array.isArray(parsed[day])) {
+          parsed[day].forEach((hour: number) => {
+            if (hour >= 0 && hour < 24) {
+              hours[hour] = true;
+            }
+          });
+        }
+      });
+      return newGrid;
+    } catch {
+      return dayPartingGrid;
+    }
+  };
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -99,6 +147,12 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
         }
       } catch (error) {
         console.error("Error parsing target questions:", error);
+      }
+
+      // Load day-parting data into visual grid
+      if (editingCampaign.dayParting) {
+        const newGrid = jsonToGrid(editingCampaign.dayParting as string);
+        setDayPartingGrid(newGrid);
       }
     } else {
       form.reset({
@@ -567,17 +621,109 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
           name="dayParting"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Active Hours (JSON format)</FormLabel>
+              <FormLabel>Active Hours</FormLabel>
               <FormControl>
-                <Textarea 
-                  placeholder='{"monday": [9, 17], "tuesday": [9, 17], "wednesday": [9, 17], "thursday": [9, 17], "friday": [9, 17]}' 
-                  className="min-h-[80px]"
-                  {...field} 
-                />
+                <div className="space-y-4">
+                  {/* Quick selection buttons */}
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newGrid = { ...dayPartingGrid };
+                        Object.keys(newGrid).forEach(day => {
+                          if (['monday', 'tuesday', 'wednesday', 'thursday', 'friday'].includes(day)) {
+                            for (let i = 9; i < 17; i++) {
+                              newGrid[day][i] = true;
+                            }
+                          }
+                        });
+                        setDayPartingGrid(newGrid);
+                        field.onChange(gridToJson(newGrid));
+                      }}
+                    >
+                      Business Hours
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newGrid = { ...dayPartingGrid };
+                        Object.keys(newGrid).forEach(day => {
+                          for (let i = 0; i < 24; i++) {
+                            newGrid[day][i] = true;
+                          }
+                        });
+                        setDayPartingGrid(newGrid);
+                        field.onChange(gridToJson(newGrid));
+                      }}
+                    >
+                      24/7
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const newGrid = { ...dayPartingGrid };
+                        Object.keys(newGrid).forEach(day => {
+                          newGrid[day].fill(false);
+                        });
+                        setDayPartingGrid(newGrid);
+                        field.onChange("");
+                      }}
+                    >
+                      Clear All
+                    </Button>
+                  </div>
+
+                  {/* Time grid */}
+                  <div className="border rounded-md bg-white">
+                    {/* Hour header */}
+                    <div className="grid grid-cols-25 gap-0 text-xs">
+                      <div className="p-1 font-medium"></div>
+                      {Array.from({ length: 24 }, (_, i) => (
+                        <div key={i} className="p-1 text-center font-mono text-gray-500">
+                          {i.toString().padStart(2, '0')}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Day rows */}
+                    {Object.entries(dayPartingGrid).map(([day, hours]) => (
+                      <div key={day} className="grid grid-cols-25 gap-0 border-t">
+                        <div className="p-2 text-sm font-medium capitalize bg-gray-50 flex items-center">
+                          {day.slice(0, 3)}
+                        </div>
+                        {hours.map((isActive, hour) => (
+                          <button
+                            key={hour}
+                            type="button"
+                            className={`h-8 w-full border-l transition-colors ${
+                              isActive 
+                                ? 'bg-blue-500 hover:bg-blue-600' 
+                                : 'bg-gray-100 hover:bg-gray-200'
+                            }`}
+                            onClick={() => {
+                              const newGrid = { ...dayPartingGrid };
+                              newGrid[day][hour] = !newGrid[day][hour];
+                              setDayPartingGrid(newGrid);
+                              field.onChange(gridToJson(newGrid));
+                            }}
+                          />
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+
+                  <FormDescription>
+                    Click on time slots to toggle active hours. Blue = active, gray = inactive.
+                  </FormDescription>
+                </div>
               </FormControl>
-              <FormDescription>
-                Specify hours in 24-hour format. Leave empty for all-day targeting.
-              </FormDescription>
+              <FormMessage />
             </FormItem>
           )}
         />

@@ -42,6 +42,11 @@
   --sidebar-ring: 207 90% 54%; /* #2563EB */
 }
 
+/* Custom grid for day-parting selector */
+.grid-cols-25 {
+  grid-template-columns: repeat(25, minmax(0, 1fr));
+}
+
 .dark {
   --background: 222 84% 5%; /* #0F172A */
   --foreground: 210 40% 98%; /* #F8FAFC */
