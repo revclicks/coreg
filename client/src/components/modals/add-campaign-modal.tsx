@@ -237,8 +237,15 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
   });
 
   const onSubmit = (data: CampaignFormData) => {
+    console.log('🚀 FORM SUBMIT TRIGGERED - Current step:', currentStep);
     console.log('Form submission started with data:', data);
     console.log('Form errors:', form.formState.errors);
+    
+    // Only allow submission on step 2
+    if (currentStep !== 2) {
+      console.log('❌ Blocking submission - not on step 2');
+      return;
+    }
     
     // Check for form validation errors
     if (Object.keys(form.formState.errors).length > 0) {
@@ -281,7 +288,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
       conversionPixels: data.conversionPixels || null,
     };
 
-    console.log('Submitting campaign data:', campaignData);
+    console.log('✅ Proceeding with campaign submission:', campaignData);
 
     if (editingCampaign) {
       updateMutation.mutate(campaignData);
@@ -291,6 +298,8 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
   };
 
   const nextStep = () => {
+    console.log('🔄 NEXT STEP CLICKED - Current step:', currentStep);
+    
     // Validate only required fields for step 1 before moving to step 2
     const requiredFields = ['name', 'url', 'vertical', 'cpcBid'];
     const isStep1Valid = requiredFields.every(field => {
@@ -308,6 +317,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
     }
 
     if (currentStep < 2) {
+      console.log('✅ Moving to step 2');
       setCurrentStep(currentStep + 1);
     }
   };
