@@ -32,9 +32,16 @@ export default function Questions() {
   const { data: questionAnalytics } = useQuery({
     queryKey: ["/api/questions/analytics"],
     queryFn: async () => {
-      const response = await fetch("/api/questions/analytics");
+      const response = await fetch("/api/questions/analytics", {
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
       return response.json();
     },
+    refetchInterval: 5000, // Refresh every 5 seconds
   });
 
   const deleteMutation = useMutation({
@@ -194,8 +201,12 @@ export default function Questions() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(optimizationMode === 'auto' ? optimizedQuestions : questions)?.map((question: any) => (
-                  <TableRow key={question.id}>
+                {(optimizationMode === 'auto' ? optimizedQuestions : questions)?.map((question: any) => {
+                  // Find analytics data for this question
+                  const analyticsData = questionAnalytics?.questions?.find((q: any) => q.questionId === question.id);
+                  
+                  return (
+                    <TableRow key={question.id}>
                     <TableCell>
                       <div className="space-y-1">
                         <div className="flex items-center space-x-2">
@@ -225,19 +236,19 @@ export default function Questions() {
                         <div className="flex items-center justify-between">
                           <span className="text-slate-600">EPI:</span>
                           <span className="font-medium text-green-600">
-                            ${(Number(question.earningsPerImpression) || 0).toFixed(3)}
+                            ${(Number(analyticsData?.earningsPerImpression || question.earningsPerImpression) || 0).toFixed(3)}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-slate-600">Response Rate:</span>
                           <span className="font-medium text-blue-600">
-                            {((Number(question.responseRate) || 0) * 100).toFixed(1)}%
+                            {((Number(analyticsData?.responseRate || question.responseRate) || 0) * 100).toFixed(1)}%
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-slate-600">Impressions:</span>
                           <span className="font-medium text-slate-700">
-                            {Number(question.impressions) || 0}
+                            {Number(analyticsData?.impressions || question.impressions) || 0}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
@@ -326,7 +337,8 @@ export default function Questions() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
