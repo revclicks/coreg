@@ -1057,12 +1057,27 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                     <ChevronRight className="h-4 w-4 ml-2" />
                   </Button>
                 ) : (
-                  <Button 
-                    type="submit" 
-                    disabled={createMutation.isPending || updateMutation.isPending}
-                  >
-                    {editingCampaign ? "Update Campaign" : "Create Campaign"}
-                  </Button>
+                  <>
+                    <Button 
+                      type="submit" 
+                      disabled={createMutation.isPending || updateMutation.isPending}
+                    >
+                      {editingCampaign ? "Update Campaign" : "Create Campaign"}
+                    </Button>
+                    <Button 
+                      type="button"
+                      variant="secondary"
+                      onClick={() => {
+                        console.log('Manual submit clicked');
+                        const formData = form.getValues();
+                        console.log('Current form values:', formData);
+                        onSubmit(formData);
+                      }}
+                      disabled={createMutation.isPending || updateMutation.isPending}
+                    >
+                      Force Submit
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
