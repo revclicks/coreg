@@ -291,6 +291,22 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
   };
 
   const nextStep = () => {
+    // Validate only required fields for step 1 before moving to step 2
+    const requiredFields = ['name', 'url', 'vertical', 'cpcBid'];
+    const isStep1Valid = requiredFields.every(field => {
+      const value = form.getValues(field as any);
+      return value && value.toString().trim() !== '';
+    });
+
+    if (!isStep1Valid) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields before proceeding",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (currentStep < 2) {
       setCurrentStep(currentStep + 1);
     }
@@ -1056,7 +1072,12 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            if (currentStep === 2) {
+              form.handleSubmit(onSubmit)(e);
+            }
+          }} className="space-y-6">
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}
 
