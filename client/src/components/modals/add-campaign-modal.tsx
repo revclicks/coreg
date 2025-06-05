@@ -112,7 +112,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
         startDate: new Date().toISOString().split('T')[0],
         endDate: "",
         targetAudience: "all",
-        priority: 5,
+
       });
       setSelectedQuestions([]);
       setCurrentStep(1);
