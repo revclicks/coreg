@@ -260,9 +260,25 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
       logic: targetingLogic
     } : null;
 
+    // Only include fields that exist in the database schema
     const campaignData = {
-      ...data,
+      name: data.name,
+      vertical: data.vertical,
+      url: data.url,
+      cpcBid: data.cpcBid,
+      imageUrl: data.imageUrl || null,
+      active: data.active,
+      frequency: data.frequency,
+      convertOnce: data.convertOnce,
+      ageMin: data.ageMin || null,
+      ageMax: data.ageMax || null,
+      gender: data.gender || null,
+      states: data.states || null,
+      device: data.device || null,
       targeting: targeting,
+      dayParting: data.dayParting || null,
+      dailyBudget: data.dailyBudget || null,
+      conversionPixels: data.conversionPixels || null,
     };
 
     console.log('Submitting campaign data:', campaignData);
