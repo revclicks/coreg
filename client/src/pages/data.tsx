@@ -33,28 +33,43 @@ export default function Data() {
   const handleExportData = () => {
     if (!collectionData?.sessions) return;
     
-    // Create CSV content
+    // Create CSV content with complete personal information
     const csvRows = [];
-    csvRows.push(['Email', 'Timestamp', 'Site', 'Device', 'State', 'Questions Answered', 'Session ID']);
+    csvRows.push([
+      'Full Name', 'Email', 'Phone', 'Address', 'Gender', 'Date of Birth', 
+      'IP Address', 'User Agent', 'Device', 'Site', 'State', 'Timestamp', 
+      'Questions Answered', 'Consent Given', 'Session ID'
+    ]);
     
     collectionData.sessions.forEach((session: any) => {
       csvRows.push([
-        session.email,
+        session.fullName || '',
+        session.email || '',
+        session.phone || '',
+        session.fullAddress || '',
+        session.gender || '',
+        session.dateOfBirth || '',
+        session.ipAddress || '',
+        session.userAgent || '',
+        session.device || '',
+        session.site || '',
+        session.state || '',
         new Date(session.timestamp).toLocaleString(),
-        session.site,
-        session.device,
-        session.state,
-        session.totalQuestions,
-        session.sessionId
+        session.totalQuestions || 0,
+        session.consentGiven ? 'Yes' : 'No',
+        session.sessionId || ''
       ]);
     });
 
-    const csvContent = csvRows.map(row => row.join(',')).join('\n');
+    const csvContent = csvRows.map(row => 
+      row.map(field => `"${String(field).replace(/"/g, '""')}"`).join(',')
+    ).join('\n');
+    
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'data-collection.csv';
+    a.download = 'lead-collection-data.csv';
     a.click();
   };
 
@@ -174,20 +189,104 @@ export default function Data() {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <div className="px-4 pb-4 border-t border-slate-100">
-                          <div className="mt-3">
-                            <h4 className="text-sm font-medium mb-2">Question Responses:</h4>
-                            <div className="space-y-2">
-                              {session.responses?.map((response: any, idx: number) => (
-                                <div key={idx} className="flex justify-between text-sm">
-                                  <span className="text-muted-foreground">{response.question}:</span>
-                                  <span className="font-medium">{response.answer}</span>
+                          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Personal Information Section */}
+                            {session.hasPersonalInfo && (
+                              <div>
+                                <h4 className="text-sm font-medium mb-3 text-slate-700">Personal Information</h4>
+                                <div className="space-y-2 text-sm">
+                                  {session.fullName && (
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Name:</span>
+                                      <span className="font-medium">{session.fullName}</span>
+                                    </div>
+                                  )}
+                                  {session.email && session.email !== 'No email provided' && (
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Email:</span>
+                                      <span className="font-medium">{session.email}</span>
+                                    </div>
+                                  )}
+                                  {session.phone && (
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Phone:</span>
+                                      <span className="font-medium">{session.phone}</span>
+                                    </div>
+                                  )}
+                                  {session.fullAddress && (
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Address:</span>
+                                      <span className="font-medium text-right max-w-xs">{session.fullAddress}</span>
+                                    </div>
+                                  )}
+                                  {session.gender && (
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Gender:</span>
+                                      <span className="font-medium">{session.gender}</span>
+                                    </div>
+                                  )}
+                                  {session.dateOfBirth && (
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Date of Birth:</span>
+                                      <span className="font-medium">{session.dateOfBirth}</span>
+                                    </div>
+                                  )}
                                 </div>
-                              ))}
+                              </div>
+                            )}
+
+                            {/* Technical Information Section */}
+                            <div>
+                              <h4 className="text-sm font-medium mb-3 text-slate-700">Technical Information</h4>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">IP Address:</span>
+                                  <span className="font-medium font-mono text-xs">{session.ipAddress}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Device:</span>
+                                  <span className="font-medium">{session.device}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">User Agent:</span>
+                                  <span className="font-medium text-xs text-right max-w-xs truncate" title={session.userAgent}>
+                                    {session.userAgent}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">Timestamp:</span>
+                                  <span className="font-medium text-xs">{new Date(session.timestamp).toLocaleString()}</span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="mt-3 pt-2 border-t border-slate-100">
+                          </div>
+
+                          {/* Question Responses Section */}
+                          {session.responses && session.responses.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-slate-100">
+                              <h4 className="text-sm font-medium mb-3 text-slate-700">Question Responses</h4>
+                              <div className="space-y-2">
+                                {session.responses.map((response: any, idx: number) => (
+                                  <div key={idx} className="flex justify-between text-sm">
+                                    <span className="text-muted-foreground">{response.question}:</span>
+                                    <span className="font-medium">{response.answer}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Session Details */}
+                          <div className="mt-4 pt-4 border-t border-slate-100">
+                            <div className="flex justify-between items-center">
                               <span className="text-xs text-muted-foreground font-mono">
                                 Session ID: {session.sessionId}
                               </span>
+                              {session.consentGiven && (
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                                  Consent Given
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>

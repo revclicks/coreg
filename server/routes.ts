@@ -688,19 +688,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: session.email || 'No email provided',
           firstName: personalInfo?.firstName || '',
           lastName: personalInfo?.lastName || '',
+          fullName: personalInfo?.firstName && personalInfo?.lastName 
+            ? `${personalInfo.firstName} ${personalInfo.lastName}` 
+            : '',
           phone: personalInfo?.phoneNumber || '',
           address: personalInfo?.streetAddress || '',
+          fullAddress: personalInfo?.streetAddress && personalInfo?.city && personalInfo?.state && personalInfo?.zipCode
+            ? `${personalInfo.streetAddress}, ${personalInfo.city}, ${personalInfo.state} ${personalInfo.zipCode}`
+            : personalInfo?.streetAddress || '',
           city: personalInfo?.city || '',
           state: personalInfo?.state || getStateFromIP(session.ipAddress),
           zipCode: personalInfo?.zipCode || '',
           dateOfBirth: personalInfo?.dateOfBirth || '',
           gender: personalInfo?.gender || '',
+          ipAddress: session.ipAddress || personalInfo?.ipAddress || 'Unknown',
+          userAgent: session.userAgent || personalInfo?.userAgent || 'Unknown',
           timestamp: session.timestamp?.toISOString() || new Date().toISOString(),
           site: session.siteName || 'Demo Site',
           device: detectDevice(session.userAgent),
           totalQuestions: questionAnswers.length,
           responses: questionAnswers,
-          hasPersonalInfo: !!personalInfo
+          hasPersonalInfo: !!personalInfo,
+          consentGiven: personalInfo?.consentGiven || false
         };
       });
 
