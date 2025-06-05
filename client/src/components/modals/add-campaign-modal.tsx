@@ -344,20 +344,25 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
 
         <FormField
           control={form.control}
-          name="status"
+          name="vertical"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Status</FormLabel>
+              <FormLabel>Vertical *</FormLabel>
               <Select onValueChange={field.onChange} value={field.value}>
                 <FormControl>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue placeholder="Select vertical" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="paused">Paused</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="health">Health</SelectItem>
+                  <SelectItem value="finance">Finance</SelectItem>
+                  <SelectItem value="education">Education</SelectItem>
+                  <SelectItem value="technology">Technology</SelectItem>
+                  <SelectItem value="automotive">Automotive</SelectItem>
+                  <SelectItem value="travel">Travel</SelectItem>
+                  <SelectItem value="insurance">Insurance</SelectItem>
+                  <SelectItem value="real_estate">Real Estate</SelectItem>
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -367,10 +372,10 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
 
         <FormField
           control={form.control}
-          name="bidPrice"
+          name="cpcBid"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Bid Price ($)</FormLabel>
+              <FormLabel>CPC Bid ($) *</FormLabel>
               <FormControl>
                 <Input type="number" step="0.01" placeholder="1.00" {...field} />
               </FormControl>
@@ -1073,27 +1078,12 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                     <ChevronRight className="h-4 w-4 ml-2" />
                   </Button>
                 ) : (
-                  <>
-                    <Button 
-                      type="submit" 
-                      disabled={createMutation.isPending || updateMutation.isPending}
-                    >
-                      {editingCampaign ? "Update Campaign" : "Create Campaign"}
-                    </Button>
-                    <Button 
-                      type="button"
-                      variant="secondary"
-                      onClick={() => {
-                        console.log('Manual submit clicked');
-                        const formData = form.getValues();
-                        console.log('Current form values:', formData);
-                        onSubmit(formData);
-                      }}
-                      disabled={createMutation.isPending || updateMutation.isPending}
-                    >
-                      Force Submit
-                    </Button>
-                  </>
+                  <Button 
+                    type="submit" 
+                    disabled={createMutation.isPending || updateMutation.isPending}
+                  >
+                    {editingCampaign ? "Update Campaign" : "Create Campaign"}
+                  </Button>
                 )}
               </div>
             </div>
