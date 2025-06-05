@@ -138,6 +138,15 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
       active: true,
       frequency: 1,
       convertOnce: false,
+      ageMin: null,
+      ageMax: null,
+      gender: null,
+      states: null,
+      device: null,
+      targeting: null,
+      dayParting: null,
+      dailyBudget: null,
+      conversionPixels: null,
     },
   });
 
