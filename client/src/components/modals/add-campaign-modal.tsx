@@ -35,6 +35,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertCampaignSchema, type Campaign, type Question } from "@shared/schema";
@@ -230,19 +231,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="imageUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Image URL</FormLabel>
-              <FormControl>
-                <Input placeholder="https://example.com/image.jpg" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+
 
         <FormField
           control={form.control}
@@ -303,93 +292,131 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
           control={form.control}
           name="imageUrl"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="col-span-2">
               <FormLabel>Ad Image</FormLabel>
               <FormControl>
-                <div className="w-full">
-                  <div
-                    className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-                      isDragging
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-300 hover:border-gray-400'
-                    }`}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      setIsDragging(true);
-                    }}
-                    onDragLeave={(e) => {
-                      e.preventDefault();
-                      setIsDragging(false);
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setIsDragging(false);
-                      const files = e.dataTransfer.files;
-                      if (files[0]) {
-                        const imageUrl = URL.createObjectURL(files[0]);
-                        field.onChange(imageUrl);
-                      }
-                    }}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const imageUrl = URL.createObjectURL(file);
+                <Tabs defaultValue="upload" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="upload">Upload File</TabsTrigger>
+                    <TabsTrigger value="url">Image URL</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="upload" className="mt-4">
+                    <div
+                      className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                        isDragging
+                          ? 'border-blue-500 bg-blue-50'
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        setIsDragging(true);
+                      }}
+                      onDragLeave={(e) => {
+                        e.preventDefault();
+                        setIsDragging(false);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setIsDragging(false);
+                        const files = e.dataTransfer.files;
+                        if (files[0]) {
+                          const imageUrl = URL.createObjectURL(files[0]);
                           field.onChange(imageUrl);
                         }
                       }}
-                    />
-                    
-                    {field.value ? (
-                      <div className="space-y-4">
-                        <img 
-                          src={field.value} 
-                          alt="Ad preview" 
-                          className="max-w-full max-h-48 mx-auto object-contain rounded"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                        <div className="text-sm text-gray-500">
-                          Click to change image
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            field.onChange("");
-                          }}
-                        >
-                          <X className="h-4 w-4 mr-2" />
-                          Remove Image
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="flex flex-col items-center space-y-2">
-                          <Upload className="h-12 w-12 text-gray-400" />
-                          <div className="text-lg font-medium text-gray-700">
-                            Drop your image here
-                          </div>
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const imageUrl = URL.createObjectURL(file);
+                            field.onChange(imageUrl);
+                          }
+                        }}
+                      />
+                      
+                      {field.value && field.value.startsWith('blob:') ? (
+                        <div className="space-y-4">
+                          <img 
+                            src={field.value} 
+                            alt="Ad preview" 
+                            className="max-w-full max-h-48 mx-auto object-contain rounded"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
                           <div className="text-sm text-gray-500">
-                            or click to browse files
+                            Click to change image
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              field.onChange("");
+                            }}
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Remove Image
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="flex flex-col items-center space-y-2">
+                            <Upload className="h-12 w-12 text-gray-400" />
+                            <div className="text-lg font-medium text-gray-700">
+                              Drop your image here
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              or click to browse files
+                            </div>
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            Supports JPG, PNG, GIF up to 10MB
                           </div>
                         </div>
-                        <div className="text-xs text-gray-400">
-                          Supports JPG, PNG, GIF up to 10MB
+                      )}
+                    </div>
+                  </TabsContent>
+                  
+                  <TabsContent value="url" className="mt-4">
+                    <div className="space-y-4">
+                      <Input 
+                        placeholder="https://example.com/image.jpg" 
+                        value={field.value && !field.value.startsWith('blob:') ? field.value : ""}
+                        onChange={(e) => field.onChange(e.target.value)}
+                      />
+                      {field.value && !field.value.startsWith('blob:') && (
+                        <div className="space-y-2">
+                          <img 
+                            src={field.value} 
+                            alt="Ad preview" 
+                            className="max-w-full max-h-48 mx-auto object-contain border rounded"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => field.onChange("")}
+                          >
+                            <X className="h-4 w-4 mr-2" />
+                            Clear URL
+                          </Button>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                      )}
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </FormControl>
               <FormMessage />
             </FormItem>
