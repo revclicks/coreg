@@ -1082,12 +1082,7 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={(e) => {
-            e.preventDefault();
-            if (currentStep === 2) {
-              form.handleSubmit(onSubmit)(e);
-            }
-          }} className="space-y-6">
+          <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
             {currentStep === 1 && renderStep1()}
             {currentStep === 2 && renderStep2()}
 
@@ -1110,7 +1105,11 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
                   </Button>
                 ) : (
                   <Button 
-                    type="submit" 
+                    type="button"
+                    onClick={() => {
+                      console.log('Create Campaign button clicked');
+                      onSubmit(form.getValues());
+                    }}
                     disabled={createMutation.isPending || updateMutation.isPending}
                   >
                     {editingCampaign ? "Update Campaign" : "Create Campaign"}
