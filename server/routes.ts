@@ -474,10 +474,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`${targetedCampaigns.length} campaigns after targeting filtering`);
 
-      // Sort by CPC bid (highest first)
-      targetedCampaigns.sort((a, b) => Number(b.cpcBid) - Number(a.cpcBid));
+      if (targetedCampaigns.length === 0) {
+        console.log('No targeted campaigns found');
+        res.json({ campaign: null });
+        return;
+      }
 
-      const selectedCampaign = targetedCampaigns[0];
+      // Implement weighted selection based on CPC bid with rotation
+      // Higher CPC gets higher probability but doesn't always win
+      const totalWeight = targetedCampaigns.reduce((sum, campaign) => {
+        return sum + Number(campaign.cpcBid);
+      }, 0);
+
+      const random = Math.random() * totalWeight;
+      let currentWeight = 0;
+      let selectedCampaign = targetedCampaigns[0]; // fallback
+
+      for (const campaign of targetedCampaigns) {
+        currentWeight += Number(campaign.cpcBid);
+        if (random <= currentWeight) {
+          selectedCampaign = campaign;
+          break;
+        }
+      }
+
+      console.log(`Selected campaign ${selectedCampaign.id} (${selectedCampaign.name}) from ${targetedCampaigns.length} eligible campaigns`);
       
       if (!selectedCampaign) {
         console.log('No campaign selected');
