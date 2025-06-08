@@ -4,6 +4,7 @@ import {
   audienceSegments, userSegmentMemberships, segmentPerformance,
   abTestExperiments, abTestVariants, abTestResults, questionStats,
   rtbBidRequests, rtbBids, rtbAuctions, rtbCampaignPerformance,
+  userInteractions,
   type Question, type InsertQuestion,
   type Campaign, type InsertCampaign,
   type Site, type InsertSite,
@@ -186,8 +187,44 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteCampaign(id: number): Promise<boolean> {
-    const result = await db.delete(campaigns).where(eq(campaigns.id, id));
-    return result.rowCount > 0;
+    try {
+      console.log(`Starting deletion of campaign ${id}`);
+      
+      // Get all click IDs for this campaign to delete related conversions
+      const campaignClickIds = await db.select({ clickId: campaignClicks.clickId })
+        .from(campaignClicks)
+        .where(eq(campaignClicks.campaignId, id));
+      
+      console.log(`Found ${campaignClickIds.length} click IDs to clean up`);
+      
+      // Delete campaign conversions by click IDs
+      if (campaignClickIds.length > 0) {
+        const clickIds = campaignClickIds.map(c => c.clickId);
+        for (const clickId of clickIds) {
+          await db.delete(campaignConversions).where(eq(campaignConversions.clickId, clickId));
+        }
+        console.log(`Deleted conversions for ${clickIds.length} clicks`);
+      }
+      
+      // Delete related records first to avoid foreign key constraints
+      const impressionResult = await db.delete(campaignImpressions).where(eq(campaignImpressions.campaignId, id));
+      console.log(`Deleted ${impressionResult.rowCount ?? 0} impressions`);
+      
+      const clickResult = await db.delete(campaignClicks).where(eq(campaignClicks.campaignId, id));
+      console.log(`Deleted ${clickResult.rowCount ?? 0} clicks`);
+      
+      const bidResult = await db.delete(rtbBids).where(eq(rtbBids.campaignId, id));
+      console.log(`Deleted ${bidResult.rowCount ?? 0} bids`);
+      
+      // Now delete the campaign
+      const result = await db.delete(campaigns).where(eq(campaigns.id, id));
+      console.log(`Campaign deletion result: ${result.rowCount ?? 0} rows affected`);
+      
+      return (result.rowCount ?? 0) > 0;
+    } catch (error) {
+      console.error('Failed to delete campaign:', error);
+      throw error; // Re-throw to get proper error in API response
+    }
   }
 
   // Sites
