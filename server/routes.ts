@@ -383,6 +383,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Flow management endpoint
+  app.post("/api/flow/next-action", async (req, res) => {
+    try {
+      const { sessionId, siteCode, currentState } = req.body;
+      
+      // Get site and questions for flow controller
+      const site = await storage.getSiteByCode(siteCode);
+      if (!site) {
+        res.status(404).json({ message: "Site not found" });
+        return;
+      }
+      
+      const questions = await storage.getQuestions();
+      const FlowController = (await import('./flow-controller')).FlowController;
+      const flowController = new FlowController(site, questions);
+      
+      // Restore state if provided
+      if (currentState) {
+        flowController.setState(currentState);
+      }
+      
+      const nextAction = flowController.getNextAction();
+      const progress = flowController.getProgress();
+      
+      let responseData: any = {
+        action: nextAction,
+        progress,
+        state: flowController.getState()
+      };
+      
+      // If next action is question, include the question
+      if (nextAction === "question") {
+        const question = flowController.getCurrentQuestion();
+        responseData.question = question;
+      }
+      
+      res.json(responseData);
+    } catch (error) {
+      console.error("Flow management error:", error);
+      res.status(500).json({ message: "Failed to determine next action" });
+    }
+  });
+
   // Ad serving endpoint
   app.post("/api/serve-ad", async (req, res) => {
     try {

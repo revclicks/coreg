@@ -48,6 +48,13 @@ export const sites = pgTable("sites", {
   excludedVerticals: jsonb("excluded_verticals"), // JSON array of excluded verticals
   siteCode: text("site_code").notNull().unique(),
   active: boolean("active").notNull().default(true),
+  flowConfig: jsonb("flow_config").default({
+    type: "progressive", // progressive, front_loaded, minimal
+    questionsPerAd: 2,
+    maxQuestions: 6,
+    maxAds: 3,
+    requireEmail: true
+  }),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

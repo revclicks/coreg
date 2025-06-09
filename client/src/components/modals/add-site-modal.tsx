@@ -27,6 +27,13 @@ import { insertSiteSchema, type Site } from "@shared/schema";
 
 const formSchema = insertSiteSchema.omit({ siteCode: true }).extend({
   excludedVerticals: z.array(z.string()).optional(),
+  flowConfig: z.object({
+    type: z.enum(["progressive", "front_loaded", "minimal"]),
+    questionsPerAd: z.number().min(1).max(5),
+    maxQuestions: z.number().min(1).max(20),
+    maxAds: z.number().min(1).max(10),
+    requireEmail: z.boolean()
+  }).optional()
 });
 
 interface AddSiteModalProps {
