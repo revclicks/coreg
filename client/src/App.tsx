@@ -16,6 +16,7 @@ import ABTesting from "@/pages/ab-testing";
 import Targeting from "@/pages/targeting";
 import RTBManager from "@/pages/rtb-manager";
 import PersonalizationHub from "@/pages/personalization-hub";
+import FlowDemo from "@/pages/flow-demo";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import NotFound from "@/pages/not-found";
@@ -50,6 +51,7 @@ function Router() {
       <Route path="/data" component={Data} />
       <Route path="/audience-segments" component={AudienceSegments} />
       <Route path="/ab-testing" component={ABTesting} />
+      <Route path="/flow-demo" component={FlowDemo} />
       <Route component={NotFound} />
     </Switch>
   );
