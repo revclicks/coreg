@@ -2,6 +2,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
+declare global {
+  interface Window {
+    coregWidget?: any;
+    enhancedCoregWidget?: any;
+  }
+}
+
 export default function WidgetTest() {
   const [widgetLoaded, setWidgetLoaded] = useState(false);
 
