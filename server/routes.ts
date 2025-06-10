@@ -441,11 +441,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const questions = await storage.getQuestions();
+      const campaigns = await storage.getCampaigns();
       const FlowController = (await import('./flow-controller')).FlowController;
       
       // Create site copy with test flow config
       const testSite = { ...site, flowConfig: testFlowConfig };
-      const flowController = new FlowController(testSite, questions);
+      const flowController = new FlowController(testSite, questions, campaigns);
+      
+      // Log question grouping for campaigns targeting multiple questions
+      const groupingAnalytics = flowController.getGroupingAnalytics();
+      if (groupingAnalytics.campaignGroups > 0) {
+        console.log(`🎯 QUESTION GROUPING: ${groupingAnalytics.campaignGroups} campaign groups created`);
+        console.log(`📊 GROUPING STATS: ${groupingAnalytics.totalGroups} total groups, avg size: ${groupingAnalytics.averageGroupSize.toFixed(1)}`);
+        if (groupingAnalytics.highestPriorityGroup) {
+          console.log(`🏆 TOP PRIORITY: Campaign "${groupingAnalytics.highestPriorityGroup.campaignName}" with ${groupingAnalytics.highestPriorityGroup.questions.length} questions`);
+          const questionTitles = groupingAnalytics.highestPriorityGroup.questions.map(q => q.text).join('" → "');
+          console.log(`📝 QUESTION ORDER: "${questionTitles}"`);
+        }
+      }
       
       // Restore state if provided
       if (currentState) {
