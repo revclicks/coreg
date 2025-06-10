@@ -327,6 +327,39 @@ export const rtbCampaignPerformance = pgTable("rtb_campaign_performance", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Flow A/B Test Experiments table
+export const flowAbTestExperiments = pgTable("flow_ab_test_experiments", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  siteId: integer("site_id").references(() => sites.id),
+  status: text("status").notNull().default("draft"), // draft, running, paused, completed
+  trafficSplit: jsonb("traffic_split").notNull(), // { progressive: 33, minimal: 33, front_loaded: 34 }
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  minSampleSize: integer("min_sample_size").default(1000),
+  confidenceLevel: decimal("confidence_level", { precision: 3, scale: 2 }).default("0.95"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Flow A/B Test Sessions table
+export const flowAbTestSessions = pgTable("flow_ab_test_sessions", {
+  id: serial("id").primaryKey(),
+  experimentId: integer("experiment_id").references(() => flowAbTestExperiments.id),
+  sessionId: text("session_id").references(() => userSessions.sessionId),
+  flowType: text("flow_type").notNull(), // progressive, minimal, front_loaded
+  questionsAnswered: integer("questions_answered").default(0),
+  adsShown: integer("ads_shown").default(0),
+  adsClicked: integer("ads_clicked").default(0),
+  completedFlow: boolean("completed_flow").default(false),
+  abandonedAt: text("abandoned_at"), // email_capture, personal_info, questions, ads
+  conversionValue: decimal("conversion_value", { precision: 10, scale: 2 }).default("0"),
+  timeSpent: integer("time_spent"), // seconds
+  deviceType: text("device_type"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const questionsRelations = relations(questions, ({ many }) => ({
   responses: many(questionResponses),
@@ -574,6 +607,16 @@ export const insertUserBehaviorPatternSchema = createInsertSchema(userBehaviorPa
   lastUpdated: true,
 });
 
+export const insertFlowAbTestExperimentSchema = createInsertSchema(flowAbTestExperiments).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertFlowAbTestSessionSchema = createInsertSchema(flowAbTestSessions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type Question = typeof questions.$inferSelect;
 export type InsertQuestion = z.infer<typeof insertQuestionSchema>;
@@ -607,6 +650,12 @@ export type InsertPersonalizationHint = z.infer<typeof insertPersonalizationHint
 
 export type UserBehaviorPattern = typeof userBehaviorPatterns.$inferSelect;
 export type InsertUserBehaviorPattern = z.infer<typeof insertUserBehaviorPatternSchema>;
+
+export type FlowAbTestExperiment = typeof flowAbTestExperiments.$inferSelect;
+export type InsertFlowAbTestExperiment = z.infer<typeof insertFlowAbTestExperimentSchema>;
+
+export type FlowAbTestSession = typeof flowAbTestSessions.$inferSelect;
+export type InsertFlowAbTestSession = z.infer<typeof insertFlowAbTestSessionSchema>;
 
 export const insertAudienceSegmentSchema = createInsertSchema(audienceSegments).omit({
   id: true,

@@ -383,7 +383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Flow management endpoint
+  // Flow management endpoint with A/B testing
   app.post("/api/flow/next-action", async (req, res) => {
     try {
       const { sessionId, siteCode, currentState } = req.body;
@@ -394,10 +394,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(404).json({ message: "Site not found" });
         return;
       }
+
+      // Check for active A/B test experiment
+      const { flowAbTestEngine } = await import('./flow-ab-test-engine');
+      const activeExperiment = await flowAbTestEngine.getActiveExperiment(site.id);
       
+      let flowType = "progressive"; // default
+      if (activeExperiment) {
+        // Assign user to test variant
+        flowType = flowAbTestEngine.assignFlowVariant(activeExperiment.trafficSplit, sessionId);
+        
+        // Record session start if not already recorded
+        if (!currentState) {
+          await flowAbTestEngine.recordSessionStart(
+            activeExperiment.id,
+            sessionId,
+            flowType,
+            req.body.deviceType,
+            req.headers['user-agent']
+          );
+        }
+      }
+
+      // Override site flow config with A/B test variant
+      const testFlowConfig = {
+        type: flowType as "progressive" | "front_loaded" | "minimal",
+        questionsPerAd: flowType === "minimal" ? 1 : flowType === "progressive" ? 2 : 0,
+        maxQuestions: flowType === "minimal" ? 4 : flowType === "progressive" ? 6 : 10,
+        maxAds: flowType === "minimal" ? 4 : 3,
+        requireEmail: true
+      };
+
       const questions = await storage.getQuestions();
       const FlowController = (await import('./flow-controller')).FlowController;
-      const flowController = new FlowController(site, questions);
+      
+      // Create site copy with test flow config
+      const testSite = { ...site, flowConfig: testFlowConfig };
+      const flowController = new FlowController(testSite, questions);
       
       // Restore state if provided
       if (currentState) {
@@ -410,7 +443,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let responseData: any = {
         action: nextAction,
         progress,
-        state: flowController.getState()
+        state: flowController.getState(),
+        flowType: activeExperiment ? flowType : undefined,
+        experimentId: activeExperiment?.id
       };
       
       // If next action is question, include the question
@@ -423,6 +458,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Flow management error:", error);
       res.status(500).json({ message: "Failed to determine next action" });
+    }
+  });
+
+  // A/B Test Experiment Management
+  app.get("/api/flow-experiments", async (req, res) => {
+    try {
+      const { flowAbTestEngine } = await import('./flow-ab-test-engine');
+      const experiments = await flowAbTestEngine.getExperiments();
+      res.json(experiments);
+    } catch (error) {
+      console.error("Error fetching experiments:", error);
+      res.status(500).json({ message: "Failed to fetch experiments" });
+    }
+  });
+
+  app.post("/api/flow-experiments", async (req, res) => {
+    try {
+      const { flowAbTestEngine } = await import('./flow-ab-test-engine');
+      const experiment = await flowAbTestEngine.createExperiment(req.body);
+      res.json(experiment);
+    } catch (error) {
+      console.error("Error creating experiment:", error);
+      res.status(500).json({ message: "Failed to create experiment" });
+    }
+  });
+
+  app.post("/api/flow-experiments/:id/start", async (req, res) => {
+    try {
+      const { flowAbTestEngine } = await import('./flow-ab-test-engine');
+      const experimentId = parseInt(req.params.id);
+      await flowAbTestEngine.startExperiment(experimentId);
+      res.json({ message: "Experiment started successfully" });
+    } catch (error) {
+      console.error("Error starting experiment:", error);
+      res.status(500).json({ message: "Failed to start experiment" });
+    }
+  });
+
+  app.post("/api/flow-experiments/:id/stop", async (req, res) => {
+    try {
+      const { flowAbTestEngine } = await import('./flow-ab-test-engine');
+      const experimentId = parseInt(req.params.id);
+      await flowAbTestEngine.stopExperiment(experimentId);
+      res.json({ message: "Experiment stopped successfully" });
+    } catch (error) {
+      console.error("Error stopping experiment:", error);
+      res.status(500).json({ message: "Failed to stop experiment" });
+    }
+  });
+
+  app.get("/api/flow-experiments/:id/results", async (req, res) => {
+    try {
+      const { flowAbTestEngine } = await import('./flow-ab-test-engine');
+      const experimentId = parseInt(req.params.id);
+      const results = await flowAbTestEngine.calculateResults(experimentId);
+      res.json(results);
+    } catch (error) {
+      console.error("Error calculating results:", error);
+      res.status(500).json({ message: "Failed to calculate results" });
+    }
+  });
+
+  // Update session progress for A/B testing
+  app.post("/api/flow/update-session", async (req, res) => {
+    try {
+      const { sessionId, ...updates } = req.body;
+      const { flowAbTestEngine } = await import('./flow-ab-test-engine');
+      await flowAbTestEngine.updateSessionProgress(sessionId, updates);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating session:", error);
+      res.status(500).json({ message: "Failed to update session" });
     }
   });
 
