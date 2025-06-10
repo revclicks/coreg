@@ -1369,14 +1369,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/clicks", async (req, res) => {
     try {
       const { sessionId, campaignId, clickId, url } = req.body;
+      
+      // Get campaign name for logging
+      const campaign = await db.select().from(campaigns).where(eq(campaigns.id, campaignId)).limit(1);
+      const campaignName = campaign.length > 0 ? campaign[0].name : 'Unknown Campaign';
+      
       const click = await storage.createCampaignClick({
         sessionId,
         campaignId,
         clickId,
         url,
       });
+      
+      console.log(`🖱️ CAMPAIGN CLICK RECORDED:`, {
+        campaignId,
+        campaignName,
+        clickId,
+        sessionId,
+        url,
+        timestamp: new Date().toISOString()
+      });
+      
       res.json(click);
     } catch (error) {
+      console.error('Error recording campaign click:', error);
       res.status(500).json({ message: "Failed to record click" });
     }
   });

@@ -731,6 +731,8 @@
     }
 
     renderAd(campaign) {
+      this.currentCampaign = campaign;
+      
       this.container.innerHTML = `
         <!-- Blue Header -->
         <div style="position: absolute; top: 0; left: 0; width: 100%; background: #1e3a8a; color: white; text-align: center; padding: 20px 0; font-size: 18px; font-weight: 600;">
@@ -752,12 +754,19 @@
             Based on your responses, this offer might interest you.
           </p>
           
-          <a href="${campaign.url}" target="_blank" 
-             style="display: inline-block; padding: 15px 30px; background: #10b981; color: white; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; margin-bottom: 20px; transition: background 0.2s;">
-            Learn More
-          </a>
+          <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 20px;">
+            <button onclick="coregWidget.clickAd('${campaign.url}')" 
+                    style="padding: 15px 30px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; transition: background 0.2s;">
+              Learn More
+            </button>
+            
+            <button onclick="coregWidget.skipAd()" 
+                    style="padding: 10px 20px; background: #6b7280; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
+              Skip
+            </button>
+          </div>
           
-          <p style="margin: 20px 0 0 0; color: #6b7280; font-size: 14px;">
+          <p style="margin: 0; color: #6b7280; font-size: 14px;">
             Thank you for completing our questionnaire!
           </p>
         </div>
@@ -876,6 +885,54 @@
       if (width < 768) return 'mobile';
       if (width < 1024) return 'tablet';
       return 'desktop';
+    }
+
+    async clickAd(url) {
+      if (this.currentCampaign) {
+        // Generate click ID for tracking
+        const clickId = this.generateClickId();
+        
+        // Track click
+        try {
+          await fetch(`${API_BASE}/api/clicks`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId: sessionId,
+              campaignId: this.currentCampaign.id,
+              clickId: clickId,
+              url: url
+            })
+          });
+          
+          console.log('🖱️ CLICK TRACKED:', {
+            campaignId: this.currentCampaign.id,
+            campaignName: this.currentCampaign.name,
+            clickId: clickId,
+            sessionId: sessionId
+          });
+        } catch (error) {
+          console.error('CoReg: Error tracking click:', error);
+        }
+
+        // Open URL
+        window.open(url, '_blank');
+      }
+      
+      // Continue to next step after short delay
+      setTimeout(() => {
+        this.showThankYou();
+      }, 1000);
+    }
+
+    generateClickId() {
+      // Generate a unique click ID
+      return 'ck_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    }
+
+    skipAd() {
+      // Continue to thank you without tracking click
+      this.showThankYou();
     }
 
     getUserState() {
