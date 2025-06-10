@@ -463,17 +463,17 @@ export default function FlowTesting() {
                     <div>
                       <CardTitle>{selectedExperiment.name}</CardTitle>
                       <CardDescription>
-                        Total Sessions: {experimentResults.totalSessions.toLocaleString()}
+                        Total Sessions: {(experimentResults as ExperimentResults)?.totalSessions?.toLocaleString() || '0'}
                       </CardDescription>
                     </div>
-                    {experimentResults.winningFlow && (
+                    {(experimentResults as ExperimentResults)?.winningFlow && (
                       <div className="text-right">
                         <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                           <Trophy className="h-3 w-3 mr-1" />
-                          Winner: {formatFlowName(experimentResults.winningFlow)}
+                          Winner: {formatFlowName((experimentResults as ExperimentResults).winningFlow!)}
                         </Badge>
                         <p className="text-sm text-muted-foreground mt-1">
-                          {experimentResults.confidence.toFixed(1)}% confidence
+                          {((experimentResults as ExperimentResults).confidence || 0).toFixed(1)}% confidence
                         </p>
                       </div>
                     )}
@@ -486,7 +486,7 @@ export default function FlowTesting() {
                       <div>
                         <p className="font-medium text-blue-900 dark:text-blue-100">Recommendation</p>
                         <p className="text-blue-800 dark:text-blue-200 text-sm mt-1">
-                          {experimentResults.recommendation}
+                          {(experimentResults as ExperimentResults)?.recommendation || 'No recommendation available yet.'}
                         </p>
                       </div>
                     </div>
@@ -495,7 +495,7 @@ export default function FlowTesting() {
               </Card>
 
               <div className="grid gap-4">
-                {experimentResults.results.map((result: FlowTestResult) => (
+                {((experimentResults as ExperimentResults)?.results || []).map((result: FlowTestResult) => (
                   <Card key={result.flowType}>
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
