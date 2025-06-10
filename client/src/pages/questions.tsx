@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Edit, Trash2, ArrowUpDown, TrendingUp, Users, Target, DollarSign } from "lucide-react";
+import { Plus, Edit, Trash2, ArrowUpDown, TrendingUp, Users, Target, DollarSign, RefreshCw } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import AddQuestionModal from "@/components/modals/add-question-modal";
 import type { Question } from "@shared/schema";
@@ -17,8 +17,10 @@ export default function Questions() {
   const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
   const [optimizationMode, setOptimizationMode] = useState<'auto' | 'manual'>('auto');
 
-  const { data: questions, isLoading } = useQuery<Question[]>({
+  const { data: questions, isLoading, refetch: refetchQuestions } = useQuery<Question[]>({
     queryKey: ["/api/questions"],
+    staleTime: 0, // Always consider data stale
+    gcTime: 0, // Don't cache data (renamed from cacheTime in v5)
   });
 
   const { data: optimizedQuestions } = useQuery({

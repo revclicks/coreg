@@ -57,13 +57,23 @@ export default function AddQuestionModal({ open, onClose, editingQuestion }: Add
       };
 
       if (editingQuestion) {
-        return await apiRequest("PUT", `/api/questions/${editingQuestion.id}`, questionData);
+        return await apiRequest(`/api/questions/${editingQuestion.id}`, {
+          method: "PUT",
+          body: JSON.stringify(questionData),
+          headers: { "Content-Type": "application/json" },
+        });
       } else {
-        return await apiRequest("POST", "/api/questions", questionData);
+        return await apiRequest("/api/questions", {
+          method: "POST",
+          body: JSON.stringify(questionData),
+          headers: { "Content-Type": "application/json" },
+        });
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/questions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/questions/optimized"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/questions/analytics"] });
       toast({
         title: editingQuestion ? "Question updated" : "Question created",
         description: `Question has been ${editingQuestion ? "updated" : "created"} successfully.`,
