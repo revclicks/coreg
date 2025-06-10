@@ -396,7 +396,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Ensure user session exists for A/B testing
-      let userSession = await storage.getSessionById(sessionId);
+      let userSession = await storage.getSession(sessionId);
       if (!userSession) {
         userSession = await storage.createSession({
           sessionId,
