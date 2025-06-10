@@ -27,22 +27,50 @@ import {
   AlertTriangle
 } from "lucide-react";
 
-interface FlowStrategy {
-  type: "progressive" | "front_loaded" | "minimal";
+interface FlowExperiment {
+  id: number;
   name: string;
   description: string;
-  questionsPerAd: number;
-  maxQuestions: number;
-  maxAds: number;
-  pros: string[];
-  cons: string[];
-  bestFor: string[];
-  metrics: {
-    conversionRate: number;
-    completionRate: number;
-    userEngagement: number;
-    revenuePerUser: number;
+  siteId: number;
+  status: string;
+  trafficSplit: {
+    progressive: number;
+    minimal: number;
+    front_loaded: number;
   };
+  startDate: string;
+  endDate: string;
+  minSampleSize: number;
+  confidenceLevel: string;
+  createdAt: string;
+}
+
+interface FlowTestResult {
+  flowType: string;
+  sessions: number;
+  completions: number;
+  completionRate: number;
+  questionsAnswered: number;
+  avgQuestionsPerSession: number;
+  adsShown: number;
+  adsClicked: number;
+  clickThroughRate: number;
+  conversionValue: number;
+  revenuePerSession: number;
+  avgTimeSpent: number;
+  abandonmentRate: number;
+  statisticalSignificance: number;
+  confidenceInterval: { lower: number; upper: number };
+}
+
+interface ExperimentResults {
+  experimentId: number;
+  status: string;
+  totalSessions: number;
+  results: FlowTestResult[];
+  winningFlow?: string;
+  recommendation: string;
+  confidence: number;
 }
 
 const flowStrategies: FlowStrategy[] = [

@@ -210,7 +210,7 @@ export class FlowAbTestEngine {
 
       // Calculate statistical significance using z-test
       const significance = this.calculateStatisticalSignificance(
-        completions, sessionCount, totalSessions, experiment[0].confidenceLevel
+        completions, sessionCount, totalSessions, experiment[0].confidenceLevel || "0.95"
       );
 
       results.push({
@@ -335,7 +335,7 @@ export class FlowAbTestEngine {
     conversions: number, 
     sessions: number, 
     totalSessions: number,
-    confidenceLevel?: string
+    confidenceLevel?: string | null
   ): { pValue: number; confidenceInterval: { lower: number; upper: number } } {
     if (sessions === 0) {
       return { pValue: 1, confidenceInterval: { lower: 0, upper: 0 } };
