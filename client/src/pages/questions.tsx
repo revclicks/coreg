@@ -169,6 +169,15 @@ export default function Questions() {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-semibold">Question Performance Manager</CardTitle>
             <div className="flex items-center space-x-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchQuestions()}
+                className="gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh
+              </Button>
               <div className="flex items-center space-x-2">
                 <label className="text-sm font-medium">Optimization Mode:</label>
                 <Select value={optimizationMode} onValueChange={(value: 'auto' | 'manual') => setOptimizationMode(value)}>
