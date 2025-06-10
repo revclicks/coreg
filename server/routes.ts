@@ -395,6 +395,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
+      // Ensure user session exists for A/B testing
+      let userSession = await storage.getSessionById(sessionId);
+      if (!userSession) {
+        userSession = await storage.createSession({
+          sessionId,
+          siteId: site.id,
+          device: req.body.deviceType || "unknown",
+          userAgent: req.headers['user-agent'] || null,
+          ipAddress: req.ip || null,
+          email: null,
+          userProfile: null,
+          state: null
+        });
+      }
+
       // Check for active A/B test experiment
       const { flowAbTestEngine } = await import('./flow-ab-test-engine');
       const activeExperiment = await flowAbTestEngine.getActiveExperiment(site.id);
