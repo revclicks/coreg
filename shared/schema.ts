@@ -21,6 +21,7 @@ export const campaigns = pgTable("campaigns", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   vertical: text("vertical").notNull(),
+  campaignType: text("campaign_type").notNull().default("standard"), // standard, lead
   ageMin: integer("age_min"),
   ageMax: integer("age_max"),
   gender: text("gender"), // all, male, female, non-binary
@@ -32,10 +33,15 @@ export const campaigns = pgTable("campaigns", {
   active: boolean("active").notNull().default(true),
   imageUrl: text("image_url"),
   frequency: integer("frequency").notNull().default(1),
-  url: text("url").notNull(),
-  cpcBid: decimal("cpc_bid", { precision: 10, scale: 2 }).notNull(),
+  url: text("url"), // For standard campaigns
+  cpcBid: decimal("cpc_bid", { precision: 10, scale: 2 }), // For standard campaigns
+  leadBid: decimal("lead_bid", { precision: 10, scale: 2 }), // For lead campaigns (price per lead)
   dailyBudget: decimal("daily_budget", { precision: 10, scale: 2 }),
   conversionPixels: jsonb("conversion_pixels"), // Array of pixel configurations
+  // Lead campaign specific fields
+  companyName: text("company_name"), // Company name for lead campaigns
+  webhookUrl: text("webhook_url"), // Endpoint to ping lead data
+  leadTerms: text("lead_terms"), // Terms shown to user about being contacted
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -113,6 +119,33 @@ export const campaignConversions = pgTable("campaign_conversions", {
   clickId: text("click_id").references(() => campaignClicks.clickId),
   revenue: decimal("revenue", { precision: 10, scale: 2 }),
   timestamp: timestamp("timestamp").defaultNow(),
+});
+
+// Leads table for lead campaigns
+export const leads = pgTable("leads", {
+  id: serial("id").primaryKey(),
+  sessionId: text("session_id").references(() => userSessions.sessionId),
+  campaignId: integer("campaign_id").references(() => campaigns.id),
+  questionId: integer("question_id").references(() => questions.id),
+  questionText: text("question_text").notNull(),
+  userAnswer: text("user_answer").notNull(),
+  leadResponse: text("lead_response").notNull(), // "yes" or "no"
+  email: text("email"),
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  phone: text("phone"),
+  dateOfBirth: text("date_of_birth"),
+  gender: text("gender"),
+  zipCode: text("zip_code"),
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  leadPrice: decimal("lead_price", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").default("pending"), // pending, delivered, failed
+  webhookDelivered: boolean("webhook_delivered").default(false),
+  webhookResponse: text("webhook_response"),
+  deliveryAttempts: integer("delivery_attempts").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  deliveredAt: timestamp("delivered_at"),
 });
 
 // Audience segments table
@@ -376,6 +409,22 @@ export const questionStatsRelations = relations(questionStats, ({ one }) => ({
 export const campaignsRelations = relations(campaigns, ({ many }) => ({
   clicks: many(campaignClicks),
   impressions: many(campaignImpressions),
+  leads: many(leads),
+}));
+
+export const leadsRelations = relations(leads, ({ one }) => ({
+  session: one(userSessions, {
+    fields: [leads.sessionId],
+    references: [userSessions.sessionId],
+  }),
+  campaign: one(campaigns, {
+    fields: [leads.campaignId],
+    references: [campaigns.id],
+  }),
+  question: one(questions, {
+    fields: [leads.questionId],
+    references: [questions.id],
+  }),
 }));
 
 export const sitesRelations = relations(sites, ({ many }) => ({
@@ -592,6 +641,12 @@ export const insertCampaignConversionSchema = createInsertSchema(campaignConvers
   timestamp: true,
 });
 
+export const insertLeadSchema = createInsertSchema(leads).omit({
+  id: true,
+  createdAt: true,
+  deliveredAt: true,
+});
+
 export const insertUserInteractionSchema = createInsertSchema(userInteractions).omit({
   id: true,
   timestamp: true,
@@ -641,6 +696,9 @@ export type InsertCampaignImpression = z.infer<typeof insertCampaignImpressionSc
 
 export type CampaignConversion = typeof campaignConversions.$inferSelect;
 export type InsertCampaignConversion = z.infer<typeof insertCampaignConversionSchema>;
+
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = z.infer<typeof insertLeadSchema>;
 
 export type UserInteraction = typeof userInteractions.$inferSelect;
 export type InsertUserInteraction = z.infer<typeof insertUserInteractionSchema>;
