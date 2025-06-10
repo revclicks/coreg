@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { BarChart3, HelpCircle, Megaphone, Globe, Database, ChartBar, Target, TrendingUp, Users, Activity, Zap, Brain, GitBranch } from "lucide-react";
+import { BarChart3, HelpCircle, Megaphone, Globe, Database, ChartBar, Target, TrendingUp, Users, Activity, Zap, Brain, GitBranch, TestTube } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
@@ -8,6 +8,7 @@ const navigation = [
   { name: "RTB Manager", href: "/rtb-manager", icon: Zap },
   { name: "Site Manager", href: "/sites", icon: Globe },
   { name: "Flow Strategy Demo", href: "/flow-demo", icon: GitBranch },
+  { name: "Flow A/B Testing", href: "/flow-testing", icon: TestTube },
   { name: "Audience Segments", href: "/audience-segments", icon: Users },
   { name: "A/B Testing", href: "/ab-testing", icon: Target },
   { name: "Analytics Hub", href: "/analytics-hub", icon: Activity },
