@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { BarChart3, HelpCircle, Megaphone, Globe, Database, ChartBar, Target, TrendingUp, Users, Activity, Zap, Brain, GitBranch, TestTube } from "lucide-react";
+import { BarChart3, HelpCircle, Megaphone, Globe, Database, ChartBar, Target, TrendingUp, Users, Activity, Zap, Brain, GitBranch, TestTube, UserCheck, Smartphone } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: BarChart3 },
@@ -14,6 +14,8 @@ const navigation = [
   { name: "Analytics Hub", href: "/analytics-hub", icon: Activity },
   { name: "Personalization", href: "/personalization", icon: Brain },
   { name: "Data Collection", href: "/data", icon: Database },
+  { name: "Lead Collection", href: "/lead-collection", icon: UserCheck },
+  { name: "Lead Widget Test", href: "/lead-widget-test", icon: Smartphone },
 ];
 
 export default function Sidebar() {

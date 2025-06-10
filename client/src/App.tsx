@@ -19,6 +19,7 @@ import PersonalizationHub from "@/pages/personalization-hub";
 import FlowDemo from "@/pages/flow-demo";
 import FlowTesting from "@/pages/flow-testing";
 import LeadCollection from "@/pages/lead-collection";
+import LeadWidgetTest from "@/pages/lead-widget-test";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import NotFound from "@/pages/not-found";
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/flow-demo" component={FlowDemo} />
       <Route path="/flow-testing" component={FlowTesting} />
       <Route path="/lead-collection" component={LeadCollection} />
+      <Route path="/lead-widget-test" component={LeadWidgetTest} />
       <Route component={NotFound} />
     </Switch>
   );
