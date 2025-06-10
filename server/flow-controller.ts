@@ -17,12 +17,21 @@ export interface FlowState {
   isComplete: boolean;
 }
 
+export interface QuestionGroup {
+  campaignId: number;
+  campaignName: string;
+  questions: Question[];
+  priority: number; // Higher priority groups are asked first
+}
+
 export class FlowController {
   private config: FlowConfig;
   private state: FlowState;
   private availableQuestions: Question[];
+  private questionGroups: QuestionGroup[];
+  private campaigns: Campaign[];
   
-  constructor(site: Site, questions: Question[]) {
+  constructor(site: Site, questions: Question[], campaigns: Campaign[] = []) {
     this.config = (site.flowConfig as FlowConfig) || {
       type: "progressive",
       questionsPerAd: 2,
@@ -40,7 +49,73 @@ export class FlowController {
       isComplete: false
     };
     
-    this.availableQuestions = questions.slice(0, this.config.maxQuestions);
+    this.campaigns = campaigns.filter(c => c.active);
+    this.questionGroups = this.createQuestionGroups(questions, this.campaigns);
+    this.availableQuestions = this.optimizeQuestionOrder();
+  }
+
+  /**
+   * Create question groups based on campaign targeting
+   */
+  private createQuestionGroups(questions: Question[], campaigns: Campaign[]): QuestionGroup[] {
+    const groups: QuestionGroup[] = [];
+    const processedQuestions = new Set<number>();
+
+    // Process campaigns by CPC bid (higher bids get priority)
+    const sortedCampaigns = campaigns
+      .filter(c => c.targeting && c.active)
+      .sort((a, b) => parseFloat(b.cpcBid) - parseFloat(a.cpcBid));
+
+    for (const campaign of sortedCampaigns) {
+      const targeting = campaign.targeting as any;
+      if (!targeting?.questions) continue;
+
+      const campaignQuestions: Question[] = [];
+      
+      for (const target of targeting.questions) {
+        const question = questions.find(q => q.id === target.questionId);
+        if (question && !processedQuestions.has(question.id)) {
+          campaignQuestions.push(question);
+          processedQuestions.add(question.id);
+        }
+      }
+
+      if (campaignQuestions.length > 0) {
+        groups.push({
+          campaignId: campaign.id,
+          campaignName: campaign.name,
+          questions: campaignQuestions,
+          priority: parseFloat(campaign.cpcBid) * 100 // Higher CPC = higher priority
+        });
+      }
+    }
+
+    // Add remaining questions as individual groups
+    const remainingQuestions = questions.filter(q => !processedQuestions.has(q.id));
+    for (const question of remainingQuestions) {
+      groups.push({
+        campaignId: 0, // No specific campaign
+        campaignName: "General",
+        questions: [question],
+        priority: 1
+      });
+    }
+
+    return groups.sort((a, b) => b.priority - a.priority);
+  }
+
+  /**
+   * Optimize question order based on grouping and flow strategy
+   */
+  private optimizeQuestionOrder(): Question[] {
+    const orderedQuestions: Question[] = [];
+    
+    // For each group, add questions consecutively
+    for (const group of this.questionGroups) {
+      orderedQuestions.push(...group.questions);
+    }
+
+    return orderedQuestions.slice(0, this.config.maxQuestions);
   }
 
   /**
@@ -250,6 +325,67 @@ export class FlowController {
    */
   isFlowComplete(): boolean {
     return this.state.isComplete;
+  }
+
+  /**
+   * Get current question group for the active question
+   */
+  getCurrentQuestionGroup(): QuestionGroup | null {
+    if (this.state.questionsAnswered >= this.availableQuestions.length) {
+      return null;
+    }
+
+    const currentQuestion = this.availableQuestions[this.state.questionsAnswered];
+    return this.questionGroups.find(group => 
+      group.questions.some(q => q.id === currentQuestion.id)
+    ) || null;
+  }
+
+  /**
+   * Check if we should show an ad after the current question group
+   */
+  shouldShowAdAfterGroup(): boolean {
+    const currentGroup = this.getCurrentQuestionGroup();
+    if (!currentGroup) return false;
+
+    // Check if all questions in the current group have been answered
+    const groupQuestionIds = currentGroup.questions.map(q => q.id);
+    const answeredGroupQuestions = this.state.questionsAnswered;
+    
+    // For campaigns with multiple questions, show ad after all group questions are answered
+    return currentGroup.campaignId > 0 && 
+           answeredGroupQuestions > 0 && 
+           this.isGroupComplete(currentGroup);
+  }
+
+  /**
+   * Check if a question group is complete
+   */
+  private isGroupComplete(group: QuestionGroup): boolean {
+    const groupStartIndex = this.availableQuestions.findIndex(q => q.id === group.questions[0].id);
+    const groupEndIndex = groupStartIndex + group.questions.length - 1;
+    
+    return this.state.questionsAnswered > groupEndIndex;
+  }
+
+  /**
+   * Get analytics info about question grouping
+   */
+  getGroupingAnalytics(): {
+    totalGroups: number;
+    campaignGroups: number;
+    averageGroupSize: number;
+    highestPriorityGroup: QuestionGroup | null;
+  } {
+    const campaignGroups = this.questionGroups.filter(g => g.campaignId > 0);
+    const totalQuestions = this.questionGroups.reduce((sum, g) => sum + g.questions.length, 0);
+    
+    return {
+      totalGroups: this.questionGroups.length,
+      campaignGroups: campaignGroups.length,
+      averageGroupSize: totalQuestions / this.questionGroups.length,
+      highestPriorityGroup: this.questionGroups.length > 0 ? this.questionGroups[0] : null
+    };
   }
 
   /**
