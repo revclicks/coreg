@@ -132,8 +132,13 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
     defaultValues: {
       name: "",
       vertical: "",
+      campaignType: "standard",
       url: "",
       cpcBid: "1.00",
+      leadBid: null,
+      companyName: "",
+      webhookUrl: "",
+      leadTerms: "",
       imageUrl: "",
       active: true,
       frequency: 1,
@@ -354,17 +359,107 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
 
         <FormField
           control={form.control}
-          name="url"
+          name="campaignType"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Landing URL *</FormLabel>
+              <FormLabel>Campaign Type</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com" {...field} />
+                <RadioGroup
+                  onValueChange={field.onChange}
+                  value={field.value}
+                  className="flex flex-row gap-6"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="standard" id="standard" />
+                    <Label htmlFor="standard">Standard (Click-based)</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="lead" id="lead" />
+                    <Label htmlFor="lead">Lead Campaign</Label>
+                  </div>
+                </RadioGroup>
               </FormControl>
+              <FormDescription>
+                Standard campaigns pay per click. Lead campaigns pay per qualified lead with yes/no responses.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
+
+        {form.watch("campaignType") === "standard" && (
+          <FormField
+            control={form.control}
+            name="url"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Landing URL *</FormLabel>
+                <FormControl>
+                  <Input placeholder="https://example.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
+        {form.watch("campaignType") === "lead" && (
+          <>
+            <FormField
+              control={form.control}
+              name="companyName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company Name *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Your Company Inc." {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    This company name will be shown to users when they agree to be contacted.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="webhookUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Webhook URL *</FormLabel>
+                  <FormControl>
+                    <Input placeholder="https://your-system.com/webhook/leads" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Leads will be sent to this endpoint via POST requests.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="leadTerms"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Lead Terms</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="By clicking Yes, you agree to be contacted by our company regarding our products and services."
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Optional terms shown to users before they respond yes/no.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </>
+        )}
 
 
 
@@ -396,19 +491,43 @@ export default function AddCampaignModal({ open, onClose, editingCampaign }: Add
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="cpcBid"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>CPC Bid ($) *</FormLabel>
-              <FormControl>
-                <Input type="number" step="0.01" placeholder="1.00" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {form.watch("campaignType") === "standard" && (
+          <FormField
+            control={form.control}
+            name="cpcBid"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>CPC Bid ($) *</FormLabel>
+                <FormControl>
+                  <Input type="number" step="0.01" placeholder="1.00" {...field} />
+                </FormControl>
+                <FormDescription>
+                  Amount paid per click on your ad.
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
+        {form.watch("campaignType") === "lead" && (
+          <FormField
+            control={form.control}
+            name="leadBid"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Lead Bid ($) *</FormLabel>
+                <FormControl>
+                  <Input type="number" step="0.01" placeholder="5.00" {...field} />
+                </FormControl>
+                <FormDescription>
+                  Amount paid per qualified lead (users who click "Yes").
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
 
 
