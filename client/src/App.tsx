@@ -18,6 +18,7 @@ import RTBManager from "@/pages/rtb-manager";
 import PersonalizationHub from "@/pages/personalization-hub";
 import FlowDemo from "@/pages/flow-demo";
 import FlowTesting from "@/pages/flow-testing";
+import LeadCollection from "@/pages/lead-collection";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import NotFound from "@/pages/not-found";
@@ -54,6 +55,7 @@ function Router() {
       <Route path="/ab-testing" component={ABTesting} />
       <Route path="/flow-demo" component={FlowDemo} />
       <Route path="/flow-testing" component={FlowTesting} />
+      <Route path="/lead-collection" component={LeadCollection} />
       <Route component={NotFound} />
     </Switch>
   );

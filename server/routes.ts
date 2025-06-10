@@ -5,9 +5,9 @@ import { db } from "./db";
 import { 
   insertQuestionSchema, insertCampaignSchema, insertSiteSchema,
   insertUserSessionSchema, insertQuestionResponseSchema, insertCampaignClickSchema,
-  insertAudienceSegmentSchema,
+  insertAudienceSegmentSchema, insertLeadSchema,
   questions, campaigns, sites, userSessions, questionResponses, campaignImpressions, campaignClicks, campaignConversions,
-  audienceSegments, userSegmentMemberships, questionImpressions
+  audienceSegments, userSegmentMemberships, questionImpressions, leads
 } from "@shared/schema";
 import { eq, desc, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -16,6 +16,7 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import { rtbEngine } from "./rtb-engine";
 import { personalizationEngine } from "./personalization-engine";
+import { leadWebhookService } from "./lead-webhook-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -1848,6 +1849,238 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error identifying behavior patterns:", error);
       res.status(500).json({ error: "Failed to identify behavior patterns" });
+    }
+  });
+
+  // Lead Campaign API endpoints
+  app.post("/api/leads/response", async (req, res) => {
+    try {
+      const {
+        sessionId,
+        campaignId,
+        questionId,
+        questionText,
+        userAnswer,
+        leadResponse, // "yes" or "no"
+        userProfile,
+        ipAddress,
+        userAgent
+      } = req.body;
+
+      // Validate lead response
+      if (!["yes", "no"].includes(leadResponse)) {
+        return res.status(400).json({ error: "Lead response must be 'yes' or 'no'" });
+      }
+
+      // Get campaign details to verify it's a lead campaign
+      const campaign = await db.select().from(campaigns).where(eq(campaigns.id, campaignId)).limit(1);
+      if (!campaign.length || campaign[0].campaignType !== "lead") {
+        return res.status(400).json({ error: "Invalid lead campaign" });
+      }
+
+      // Get session details
+      const session = await db.select().from(userSessions).where(eq(userSessions.sessionId, sessionId)).limit(1);
+      if (!session.length) {
+        return res.status(400).json({ error: "Session not found" });
+      }
+
+      // Create lead record
+      const leadData = {
+        sessionId,
+        campaignId,
+        questionId,
+        questionText,
+        userAnswer,
+        leadResponse,
+        email: userProfile?.email || session[0].email,
+        firstName: userProfile?.firstName,
+        lastName: userProfile?.lastName,
+        phone: userProfile?.phone,
+        dateOfBirth: userProfile?.dateOfBirth,
+        gender: userProfile?.gender,
+        zipCode: userProfile?.zipCode,
+        ipAddress,
+        userAgent,
+        leadPrice: campaign[0].leadBid || "0",
+        status: "pending"
+      };
+
+      const [lead] = await db.insert(leads).values(leadData).returning();
+
+      console.log(`📝 LEAD CAPTURED: ${leadResponse.toUpperCase()} response for campaign "${campaign[0].name}" on question "${questionText}"`);
+
+      // If user responded "yes", attempt webhook delivery
+      if (leadResponse === "yes" && campaign[0].webhookUrl) {
+        console.log(`🚀 PROCESSING LEAD: Attempting webhook delivery for lead ${lead.id}`);
+        
+        // Deliver lead via webhook (async)
+        leadWebhookService.deliverLead(lead.id).then(success => {
+          if (success) {
+            console.log(`✅ LEAD DELIVERED: Lead ${lead.id} successfully delivered to ${campaign[0].companyName}`);
+          } else {
+            console.log(`❌ LEAD DELIVERY FAILED: Lead ${lead.id} failed to deliver`);
+          }
+        }).catch(error => {
+          console.error(`❌ WEBHOOK ERROR: Failed to deliver lead ${lead.id}:`, error);
+        });
+      } else if (leadResponse === "no") {
+        console.log(`❌ LEAD DECLINED: User declined for campaign "${campaign[0].name}"`);
+      }
+
+      res.json({
+        leadId: lead.id,
+        success: true,
+        message: leadResponse === "yes" ? "Lead captured and will be delivered" : "Response recorded"
+      });
+
+    } catch (error) {
+      console.error("Error processing lead response:", error);
+      res.status(500).json({ error: "Failed to process lead response" });
+    }
+  });
+
+  // Get leads for a campaign (for data collection page)
+  app.get("/api/campaigns/:id/leads", async (req, res) => {
+    try {
+      const campaignId = parseInt(req.params.id);
+      const { status, startDate, endDate } = req.query;
+
+      let query = db
+        .select({
+          lead: leads,
+          question: questions,
+          session: userSessions
+        })
+        .from(leads)
+        .leftJoin(questions, eq(leads.questionId, questions.id))
+        .leftJoin(userSessions, eq(leads.sessionId, userSessions.sessionId))
+        .where(eq(leads.campaignId, campaignId));
+
+      if (status) {
+        query = query.where(eq(leads.status, status as string));
+      }
+
+      if (startDate) {
+        query = query.where(gte(leads.createdAt, new Date(startDate as string)));
+      }
+
+      if (endDate) {
+        query = query.where(lte(leads.createdAt, new Date(endDate as string)));
+      }
+
+      const campaignLeads = await query.orderBy(desc(leads.createdAt));
+
+      const formattedLeads = campaignLeads.map(({ lead, question, session }) => ({
+        id: lead.id,
+        questionText: lead.questionText,
+        userAnswer: lead.userAnswer,
+        leadResponse: lead.leadResponse,
+        email: lead.email,
+        firstName: lead.firstName,
+        lastName: lead.lastName,
+        phone: lead.phone,
+        leadPrice: lead.leadPrice,
+        status: lead.status,
+        webhookDelivered: lead.webhookDelivered,
+        deliveryAttempts: lead.deliveryAttempts,
+        createdAt: lead.createdAt,
+        deliveredAt: lead.deliveredAt,
+        questionId: question?.id,
+        sessionInfo: {
+          device: session?.device,
+          ipAddress: session?.ipAddress,
+          userAgent: session?.userAgent
+        }
+      }));
+
+      res.json(formattedLeads);
+
+    } catch (error) {
+      console.error("Error fetching campaign leads:", error);
+      res.status(500).json({ error: "Failed to fetch campaign leads" });
+    }
+  });
+
+  // Get lead delivery statistics
+  app.get("/api/leads/stats", async (req, res) => {
+    try {
+      const stats = await leadWebhookService.getDeliveryStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching lead stats:", error);
+      res.status(500).json({ error: "Failed to fetch lead stats" });
+    }
+  });
+
+  // Retry failed lead deliveries
+  app.post("/api/leads/retry-failed", async (req, res) => {
+    try {
+      await leadWebhookService.retryFailedDeliveries();
+      res.json({ success: true, message: "Failed deliveries retried" });
+    } catch (error) {
+      console.error("Error retrying failed deliveries:", error);
+      res.status(500).json({ error: "Failed to retry deliveries" });
+    }
+  });
+
+  // Get all leads across campaigns for data collection overview
+  app.get("/api/leads", async (req, res) => {
+    try {
+      const { campaignId, status, startDate, endDate } = req.query;
+
+      let query = db
+        .select({
+          lead: leads,
+          campaign: campaigns,
+          question: questions
+        })
+        .from(leads)
+        .leftJoin(campaigns, eq(leads.campaignId, campaigns.id))
+        .leftJoin(questions, eq(leads.questionId, questions.id));
+
+      if (campaignId) {
+        query = query.where(eq(leads.campaignId, parseInt(campaignId as string)));
+      }
+
+      if (status) {
+        query = query.where(eq(leads.status, status as string));
+      }
+
+      if (startDate) {
+        query = query.where(gte(leads.createdAt, new Date(startDate as string)));
+      }
+
+      if (endDate) {
+        query = query.where(lte(leads.createdAt, new Date(endDate as string)));
+      }
+
+      const allLeads = await query.orderBy(desc(leads.createdAt));
+
+      const formattedLeads = allLeads.map(({ lead, campaign, question }) => ({
+        id: lead.id,
+        campaignId: campaign?.id,
+        campaignName: campaign?.name,
+        companyName: campaign?.companyName,
+        questionText: lead.questionText,
+        userAnswer: lead.userAnswer,
+        leadResponse: lead.leadResponse,
+        email: lead.email,
+        firstName: lead.firstName,
+        lastName: lead.lastName,
+        phone: lead.phone,
+        leadPrice: lead.leadPrice,
+        status: lead.status,
+        webhookDelivered: lead.webhookDelivered,
+        deliveryAttempts: lead.deliveryAttempts,
+        createdAt: lead.createdAt,
+        deliveredAt: lead.deliveredAt
+      }));
+
+      res.json(formattedLeads);
+
+    } catch (error) {
+      console.error("Error fetching all leads:", error);
+      res.status(500).json({ error: "Failed to fetch leads" });
     }
   });
 
