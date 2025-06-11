@@ -144,6 +144,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Session management for enhanced widget
+  app.post("/api/sessions", async (req, res) => {
+    try {
+      const { sessionId, siteId, device, state, userAgent, ipAddress, email, userProfile } = req.body;
+      
+      // Create or get existing session
+      let userSession = await storage.getSession(sessionId);
+      if (!userSession) {
+        userSession = await storage.createSession({
+          sessionId,
+          siteId: siteId || null,
+          device: device || "unknown",
+          userAgent: userAgent || req.headers['user-agent'] || null,
+          ipAddress: ipAddress || req.ip || null,
+          email: email || null,
+          userProfile: userProfile || null,
+          state: state || null
+        });
+      }
+      
+      res.json({ sessionId: userSession.sessionId, status: 'created' });
+    } catch (error) {
+      console.error("Session creation error:", error);
+      res.status(500).json({ message: "Failed to create session" });
+    }
+  });
+
   // Questions endpoints
   app.get("/api/questions", async (req, res) => {
     try {

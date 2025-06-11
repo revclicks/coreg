@@ -307,22 +307,36 @@
     
     <!-- Widget Variables -->
     <script>
-        const API_BASE = '';
-        const sessionId = 'senior-demo-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-        const siteCode = 'L-2a1xhXBi'; // Senior Benefits site code
+        // Define global variables for the widget
+        window.API_BASE = '';
+        window.sessionId = 'senior-demo-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        window.siteCode = 'L-2a1xhXBi'; // Senior Benefits site code
         
-        let enhancedCoregWidget;
+        let seniorWidget;
         
         function startSeniorBenefitsFlow() {
-            // Initialize the enhanced widget for senior benefits
-            enhancedCoregWidget = new EnhancedCoRegWidget();
-            enhancedCoregWidget.siteId = 3; // Senior Benefits site ID
-            enhancedCoregWidget.init();
+            console.log('Starting Senior Benefits Flow...');
+            try {
+                // Initialize the enhanced widget for senior benefits
+                seniorWidget = new EnhancedCoRegWidget();
+                seniorWidget.siteId = 3; // Senior Benefits site ID
+                console.log('Widget initialized with site ID:', seniorWidget.siteId);
+                seniorWidget.init();
+            } catch (error) {
+                console.error('Widget initialization error:', error);
+                alert('There was an issue loading the benefits form. Please try refreshing the page.');
+            }
         }
         
-        // Auto-initialize on page load for demo purposes
-        window.addEventListener('load', function() {
+        // Ensure DOM is loaded before making widget available
+        document.addEventListener('DOMContentLoaded', function() {
             console.log('Senior Benefits page loaded - widget ready');
+            // Test if the widget class is available
+            if (typeof EnhancedCoRegWidget === 'undefined') {
+                console.error('EnhancedCoRegWidget class not found - script may not have loaded');
+            } else {
+                console.log('EnhancedCoRegWidget class loaded successfully');
+            }
         });
     </script>
 </body>
