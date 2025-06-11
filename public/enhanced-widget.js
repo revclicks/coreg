@@ -214,61 +214,82 @@ class EnhancedCoRegWidget {
   }
 
   showPersonalInfoForm() {
+    const isSeniorSite = this.siteId === 3;
+    const headerColor = isSeniorSite ? '#059669' : '#1e3a8a';
+    const buttonColor = isSeniorSite ? '#059669' : '#3b82f6';
+    const fontSize = isSeniorSite ? '18px' : '16px';
+    const labelSize = isSeniorSite ? '18px' : '16px';
+    const padding = isSeniorSite ? '16px' : '12px';
+    const buttonPadding = isSeniorSite ? '18px' : '15px';
+    
     this.container.innerHTML = `
       <!-- Progress Bar -->
       <div style="background: #e5e7eb; height: 4px;">
-        <div style="background: #3b82f6; height: 100%; width: ${this.progress.completionRate}%; transition: width 0.3s;"></div>
+        <div style="background: ${buttonColor}; height: 100%; width: ${this.progress.completionRate}%; transition: width 0.3s;"></div>
       </div>
       
       <!-- Header -->
-      <div style="background: #1e3a8a; color: white; text-align: center; padding: 20px; font-size: 18px; font-weight: 600;">
-        Tell Us About Yourself
+      <div style="background: ${headerColor}; color: white; text-align: center; padding: 20px; font-size: ${isSeniorSite ? '20px' : '18px'}; font-weight: 600;">
+        ${isSeniorSite ? '📋 Complete Your Profile' : 'Tell Us About Yourself'}
       </div>
       
       <!-- Personal Info Form -->
       <div style="background: white; padding: 40px;">
+        ${isSeniorSite ? `
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h3 style="color: #059669; font-size: 22px; margin: 0 0 10px 0;">Almost There!</h3>
+          <p style="color: #6b7280; font-size: 16px; margin: 0;">Just a few details to personalize your benefits</p>
+        </div>
+        ` : ''}
+        
         <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 8px; color: #374151; font-weight: 600;">First Name</label>
-          <input type="text" id="first-name" placeholder="Enter your first name" 
-                 style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px; box-sizing: border-box;">
+          <label style="display: block; margin-bottom: 10px; color: #374151; font-weight: 600; font-size: ${labelSize};">First Name</label>
+          <input type="text" id="first-name" placeholder="${isSeniorSite ? 'Your first name' : 'Enter your first name'}" 
+                 style="width: 100%; padding: ${padding}; border: 2px solid #e5e7eb; border-radius: 8px; font-size: ${fontSize}; box-sizing: border-box;">
         </div>
         
         <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 8px; color: #374151; font-weight: 600;">Last Name</label>
-          <input type="text" id="last-name" placeholder="Enter your last name" 
-                 style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px; box-sizing: border-box;">
+          <label style="display: block; margin-bottom: 10px; color: #374151; font-weight: 600; font-size: ${labelSize};">Last Name</label>
+          <input type="text" id="last-name" placeholder="${isSeniorSite ? 'Your last name' : 'Enter your last name'}" 
+                 style="width: 100%; padding: ${padding}; border: 2px solid #e5e7eb; border-radius: 8px; font-size: ${fontSize}; box-sizing: border-box;">
         </div>
         
         <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 8px; color: #374151; font-weight: 600;">Phone Number</label>
-          <input type="tel" id="phone" placeholder="(555) 123-4567" 
-                 style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px; box-sizing: border-box;">
+          <label style="display: block; margin-bottom: 10px; color: #374151; font-weight: 600; font-size: ${labelSize};">Phone Number</label>
+          <input type="tel" id="phone" placeholder="${isSeniorSite ? 'Your phone number' : '(555) 123-4567'}" 
+                 style="width: 100%; padding: ${padding}; border: 2px solid #e5e7eb; border-radius: 8px; font-size: ${fontSize}; box-sizing: border-box;">
         </div>
         
         <div style="margin-bottom: 20px;">
-          <label style="display: block; margin-bottom: 8px; color: #374151; font-weight: 600;">Date of Birth</label>
-          <input type="text" id="dob" placeholder="MM/DD/YYYY" 
-                 style="width: 100%; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px; box-sizing: border-box;">
+          <label style="display: block; margin-bottom: 10px; color: #374151; font-weight: 600; font-size: ${labelSize};">${isSeniorSite ? 'Birth Year (for age verification)' : 'Date of Birth'}</label>
+          <input type="text" id="dob" placeholder="${isSeniorSite ? 'YYYY (e.g., 1950)' : 'MM/DD/YYYY'}" 
+                 style="width: 100%; padding: ${padding}; border: 2px solid #e5e7eb; border-radius: 8px; font-size: ${fontSize}; box-sizing: border-box;">
         </div>
         
         <div style="margin-bottom: 30px;">
-          <label style="display: block; margin-bottom: 8px; color: #374151; font-weight: 600;">Gender</label>
-          <div style="display: flex; gap: 10px;">
+          <label style="display: block; margin-bottom: 10px; color: #374151; font-weight: 600; font-size: ${labelSize};">Gender</label>
+          <div style="display: flex; gap: 15px;">
             <button type="button" id="gender-male" onclick="enhancedCoregWidget.selectGender('Male')" 
-                    style="flex: 1; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; background: white; cursor: pointer;">
+                    style="flex: 1; padding: ${padding}; border: 2px solid #e5e7eb; border-radius: 8px; background: white; cursor: pointer; font-size: ${fontSize};">
               Male
             </button>
             <button type="button" id="gender-female" onclick="enhancedCoregWidget.selectGender('Female')" 
-                    style="flex: 1; padding: 12px; border: 2px solid #e5e7eb; border-radius: 8px; background: white; cursor: pointer;">
+                    style="flex: 1; padding: ${padding}; border: 2px solid #e5e7eb; border-radius: 8px; background: white; cursor: pointer; font-size: ${fontSize};">
               Female
             </button>
           </div>
         </div>
         
         <button onclick="enhancedCoregWidget.submitPersonalInfo()" 
-                style="width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
-          Continue to Questions
+                style="width: 100%; padding: ${buttonPadding}; background: ${buttonColor}; color: white; border: none; border-radius: 8px; font-size: ${fontSize}; font-weight: 600; cursor: pointer;">
+          ${isSeniorSite ? '🎯 Find My Benefits' : 'Continue to Questions'}
         </button>
+        
+        ${isSeniorSite ? `
+        <p style="margin-top: 20px; color: #6b7280; font-size: 14px; text-align: center;">
+          Your information is secure and used only to match you with relevant senior benefits
+        </p>
+        ` : ''}
       </div>
       
       <!-- Close button -->
