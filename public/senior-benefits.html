@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senior Benefits - Exclusive Savings for Seniors 55+</title>
+    <meta name="description" content="Discover exclusive senior discounts on groceries, prescriptions, and everyday essentials. Save up to 40% with benefits designed specifically for seniors.">
+    
+    <!-- Open Graph tags -->
+    <meta property="og:title" content="Senior Benefits - Exclusive Savings for Seniors 55+">
+    <meta property="og:description" content="Unlock savings on groceries, prescriptions, and more with benefits designed for seniors.">
+    <meta property="og:type" content="website">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%);
+            min-height: 100vh;
+        }
+        
+        .hero-section {
+            text-align: center;
+            padding: 60px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .hero-subtitle {
+            font-size: 1.5rem;
+            color: #6b7280;
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .seniors-illustration {
+            max-width: 600px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .cta-button {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            border: none;
+            padding: 20px 50px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(5, 150, 105, 0.3);
+            margin: 30px 0;
+            display: inline-block;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(5, 150, 105, 0.4);
+        }
+        
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            margin: 60px auto;
+            padding: 0 20px;
+        }
+        
+        .benefit-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .benefit-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .benefit-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        
+        .benefit-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 10px;
+        }
+        
+        .benefit-description {
+            color: #6b7280;
+            font-size: 1rem;
+        }
+        
+        .trust-indicators {
+            background: white;
+            margin: 60px 20px;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            text-align: center;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .testimonial {
+            font-style: italic;
+            font-size: 1.2rem;
+            color: #4b5563;
+            margin-bottom: 20px;
+        }
+        
+        .testimonial-author {
+            font-weight: bold;
+            color: #059669;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+            
+            .cta-button {
+                padding: 15px 30px;
+                font-size: 1.2rem;
+            }
+            
+            .benefits-grid {
+                grid-template-columns: 1fr;
+                margin: 40px auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-section">
+        <h1 class="hero-title">Unlock Senior Savings Today!</h1>
+        <p class="hero-subtitle">
+            Join thousands of seniors saving up to 40% on groceries, prescriptions, and everyday essentials.
+        </p>
+        
+        <div class="seniors-illustration">
+            <!-- SVG illustration of seniors with grocery bags -->
+            <svg viewBox="0 0 800 400" style="width: 100%; height: auto;">
+                <!-- Background -->
+                <rect width="800" height="400" fill="#f8fafc"/>
+                
+                <!-- Ground -->
+                <ellipse cx="400" cy="380" rx="350" ry="20" fill="#e2e8f0" opacity="0.6"/>
+                
+                <!-- Senior Woman -->
+                <g transform="translate(200, 100)">
+                    <!-- Body -->
+                    <ellipse cx="50" cy="180" rx="35" ry="55" fill="#fbbf24"/>
+                    <!-- Head -->
+                    <circle cx="50" cy="60" r="35" fill="#fde68a"/>
+                    <!-- Hair -->
+                    <path d="M20 45 Q50 20 80 45 Q75 35 50 30 Q25 35 20 45" fill="#d1d5db"/>
+                    <!-- Face features -->
+                    <circle cx="42" cy="55" r="2" fill="#374151"/>
+                    <circle cx="58" cy="55" r="2" fill="#374151"/>
+                    <path d="M45 65 Q50 70 55 65" stroke="#374151" stroke-width="2" fill="none"/>
+                    <!-- Arms -->
+                    <ellipse cx="25" cy="130" rx="12" ry="40" fill="#fbbf24"/>
+                    <ellipse cx="75" cy="130" rx="12" ry="40" fill="#fbbf24"/>
+                    <!-- Legs -->
+                    <ellipse cx="35" cy="250" rx="15" ry="45" fill="#3b82f6"/>
+                    <ellipse cx="65" cy="250" rx="15" ry="45" fill="#3b82f6"/>
+                    <!-- Grocery bag in left hand -->
+                    <rect x="10" y="150" width="20" height="25" fill="#8b5cf6" rx="2"/>
+                    <rect x="12" y="148" width="16" height="8" fill="#a78bfa"/>
+                    <!-- Grocery items poking out -->
+                    <rect x="14" y="145" width="3" height="8" fill="#22c55e"/>
+                    <rect x="18" y="143" width="4" height="10" fill="#ef4444"/>
+                    <rect x="23" y="146" width="3" height="7" fill="#f59e0b"/>
+                </g>
+                
+                <!-- Senior Man -->
+                <g transform="translate(450, 110)">
+                    <!-- Body -->
+                    <ellipse cx="50" cy="170" rx="40" ry="50" fill="#3b82f6"/>
+                    <!-- Head -->
+                    <circle cx="50" cy="60" r="32" fill="#fde68a"/>
+                    <!-- Hair -->
+                    <path d="M25 50 Q50 25 75 50 Q70 40 50 35 Q30 40 25 50" fill="#9ca3af"/>
+                    <!-- Face features -->
+                    <circle cx="43" cy="55" r="2" fill="#374151"/>
+                    <circle cx="57" cy="55" r="2" fill="#374151"/>
+                    <path d="M46 65 Q50 70 54 65" stroke="#374151" stroke-width="2" fill="none"/>
+                    <!-- Arms -->
+                    <ellipse cx="20" cy="125" rx="15" ry="35" fill="#3b82f6"/>
+                    <ellipse cx="80" cy="125" rx="15" ry="35" fill="#3b82f6"/>
+                    <!-- Legs -->
+                    <ellipse cx="35" cy="240" rx="18" ry="40" fill="#374151"/>
+                    <ellipse cx="65" cy="240" rx="18" ry="40" fill="#374151"/>
+                    <!-- Grocery bag in right hand -->
+                    <rect x="85" y="145" width="22" height="28" fill="#10b981" rx="2"/>
+                    <rect x="87" y="143" width="18" height="8" fill="#34d399"/>
+                    <!-- Grocery items -->
+                    <circle cx="92" cy="140" r="3" fill="#ef4444"/>
+                    <circle cx="98" cy="138" r="2.5" fill="#f59e0b"/>
+                    <rect x="102" y="136" width="3" height="8" fill="#22c55e"/>
+                </g>
+                
+                <!-- Excitement indicators -->
+                <g transform="translate(180, 60)">
+                    <text x="0" y="0" font-size="24" fill="#fbbf24">✨</text>
+                    <text x="30" y="-10" font-size="20" fill="#fbbf24">✨</text>
+                    <text x="15" y="25" font-size="18" fill="#fbbf24">✨</text>
+                </g>
+                
+                <g transform="translate(520, 70)">
+                    <text x="0" y="0" font-size="24" fill="#fbbf24">✨</text>
+                    <text x="-20" y="20" font-size="20" fill="#fbbf24">✨</text>
+                    <text x="25" y="15" font-size="18" fill="#fbbf24">✨</text>
+                </g>
+                
+                <!-- Title text in SVG -->
+                <text x="400" y="50" text-anchor="middle" font-size="32" font-weight="bold" fill="#1f2937">
+                    Save More on Groceries!
+                </text>
+                <text x="400" y="85" text-anchor="middle" font-size="18" fill="#6b7280">
+                    Discover exclusive senior discounts and benefits
+                </text>
+            </svg>
+        </div>
+        
+        <button class="cta-button" onclick="startSeniorBenefitsFlow()">
+            🎁 Get My Benefits Now!
+        </button>
+        
+        <p style="color: #6b7280; font-size: 1.1rem; margin-top: 20px;">
+            ✅ No membership fees • ✅ Instant access • ✅ 100% secure
+        </p>
+    </div>
+    
+    <div class="benefits-grid">
+        <div class="benefit-card">
+            <div class="benefit-icon">🛒</div>
+            <h3 class="benefit-title">Grocery Discounts</h3>
+            <p class="benefit-description">Save 15-40% at major retailers including Walmart, Kroger, and more</p>
+        </div>
+        
+        <div class="benefit-card">
+            <div class="benefit-icon">💊</div>
+            <h3 class="benefit-title">Prescription Savings</h3>
+            <p class="benefit-description">Reduce medication costs with exclusive pharmacy partnerships</p>
+        </div>
+        
+        <div class="benefit-card">
+            <div class="benefit-icon">🏥</div>
+            <h3 class="benefit-title">Healthcare Benefits</h3>
+            <p class="benefit-description">Access affordable dental, vision, and wellness programs</p>
+        </div>
+        
+        <div class="benefit-card">
+            <div class="benefit-icon">🎯</div>
+            <h3 class="benefit-title">Exclusive Offers</h3>
+            <p class="benefit-description">Senior-only deals on travel, entertainment, and services</p>
+        </div>
+    </div>
+    
+    <div class="trust-indicators">
+        <p class="testimonial">
+            "I've saved over $200 this month on groceries alone! These benefits are a game-changer for seniors on a fixed income."
+        </p>
+        <p class="testimonial-author">- Margaret K., Age 67</p>
+        
+        <div style="margin-top: 30px;">
+            <strong style="color: #059669; font-size: 1.1rem;">Trusted by 50,000+ Seniors Nationwide</strong>
+        </div>
+    </div>
+
+    <!-- Enhanced Widget Script -->
+    <script src="/enhanced-widget.js"></script>
+    
+    <!-- Widget Variables -->
+    <script>
+        const API_BASE = '';
+        const sessionId = 'senior-demo-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        const siteCode = 'L-2a1xhXBi'; // Senior Benefits site code
+        
+        let enhancedCoregWidget;
+        
+        function startSeniorBenefitsFlow() {
+            // Initialize the enhanced widget for senior benefits
+            enhancedCoregWidget = new EnhancedCoRegWidget();
+            enhancedCoregWidget.siteId = 3; // Senior Benefits site ID
+            enhancedCoregWidget.init();
+        }
+        
+        // Auto-initialize on page load for demo purposes
+        window.addEventListener('load', function() {
+            console.log('Senior Benefits page loaded - widget ready');
+        });
+    </script>
+</body>
+</html>

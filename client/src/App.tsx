@@ -21,7 +21,6 @@ import FlowTesting from "@/pages/flow-testing";
 import LeadCollection from "@/pages/lead-collection";
 import LeadWidgetTest from "@/pages/lead-widget-test";
 import WidgetTest from "@/pages/widget-test";
-import SeniorBenefitsDemo from "@/pages/senior-benefits-demo";
 import Sidebar from "@/components/layout/sidebar";
 import Header from "@/components/layout/header";
 import NotFound from "@/pages/not-found";
@@ -61,7 +60,6 @@ function Router() {
       <Route path="/lead-collection" component={LeadCollection} />
       <Route path="/lead-widget-test" component={LeadWidgetTest} />
       <Route path="/widget-test" component={WidgetTest} />
-      <Route path="/senior-benefits-demo" component={SeniorBenefitsDemo} />
       <Route component={NotFound} />
     </Switch>
   );

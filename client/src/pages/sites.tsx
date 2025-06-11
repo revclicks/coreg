@@ -106,6 +106,30 @@ export default function Sites() {
           </div>
         </div>
         <CardContent className="p-6">
+          {/* External Demo Links */}
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <h4 className="text-lg font-semibold text-green-800 mb-2">Live Demo Pages</h4>
+            <p className="text-green-700 text-sm mb-3">External standalone pages for testing and demonstration</p>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('/senior-benefits.html', '_blank')}
+                className="border-green-300 text-green-700 hover:bg-green-100"
+              >
+                Senior Benefits Demo (Site ID: 3)
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open('/widget-test', '_blank')}
+                className="border-blue-300 text-blue-700 hover:bg-blue-100"
+              >
+                Widget Test Page
+              </Button>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {sites?.map((site) => (
               <Card key={site.id} className="border border-slate-200">
