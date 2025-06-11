@@ -25,15 +25,25 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { insertSiteSchema, type Site } from "@shared/schema";
 
-const formSchema = insertSiteSchema.omit({ siteCode: true }).extend({
-  excludedVerticals: z.array(z.string()).optional(),
+const formSchema = z.object({
+  name: z.string().min(1, "Site name is required"),
+  domain: z.string().min(1, "Domain is required"),
+  vertical: z.string().min(1, "Vertical is required"),
+  excludedVerticals: z.array(z.string()).optional().default([]),
+  active: z.boolean().default(true),
   flowConfig: z.object({
-    type: z.enum(["progressive", "front_loaded", "minimal"]),
-    questionsPerAd: z.number().min(1).max(5),
-    maxQuestions: z.number().min(1).max(20),
-    maxAds: z.number().min(1).max(10),
-    requireEmail: z.boolean()
-  }).optional()
+    type: z.enum(["progressive", "front_loaded", "minimal"]).default("progressive"),
+    questionsPerAd: z.number().min(1).max(5).default(2),
+    maxQuestions: z.number().min(1).max(20).default(6),
+    maxAds: z.number().min(1).max(10).default(3),
+    requireEmail: z.boolean().default(true)
+  }).default({
+    type: "progressive",
+    questionsPerAd: 2,
+    maxQuestions: 6,
+    maxAds: 3,
+    requireEmail: true
+  })
 });
 
 interface AddSiteModalProps {
@@ -55,18 +65,43 @@ export default function AddSiteModal({ open, onClose, editingSite }: AddSiteModa
       vertical: editingSite?.vertical || "",
       excludedVerticals: (editingSite?.excludedVerticals as string[]) || [],
       active: editingSite?.active ?? true,
+      flowConfig: editingSite?.flowConfig || {
+        type: "progressive",
+        questionsPerAd: 2,
+        maxQuestions: 6,
+        maxAds: 3,
+        requireEmail: true
+      }
     },
   });
 
   const mutation = useMutation({
     mutationFn: async (data: z.infer<typeof formSchema>) => {
-      if (editingSite) {
-        return await apiRequest("PUT", `/api/sites/${editingSite.id}`, data);
-      } else {
-        return await apiRequest("POST", "/api/sites", data);
+      console.log("🚀 Submitting site data:", data);
+      try {
+        if (editingSite) {
+          const result = await apiRequest(`/api/sites/${editingSite.id}`, {
+            method: "PUT",
+            body: JSON.stringify(data)
+          });
+          console.log("✅ Site update successful:", result);
+          return await result.json();
+        } else {
+          const result = await apiRequest("/api/sites", {
+            method: "POST",
+            body: JSON.stringify(data)
+          });
+          console.log("✅ Site creation successful:", result);
+          return await result.json();
+        }
+      } catch (error) {
+        console.error("❌ Site submission error:", error);
+        throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("🎉 Site mutation success callback:", data);
+      
       // Invalidate all sites-related queries
       queryClient.invalidateQueries({ queryKey: ["/api/sites"] });
       queryClient.removeQueries({ queryKey: ["/api/sites"] });
@@ -79,10 +114,11 @@ export default function AddSiteModal({ open, onClose, editingSite }: AddSiteModa
       onClose();
       form.reset();
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("💥 Site mutation error callback:", error);
       toast({
         title: "Error",
-        description: `Failed to ${editingSite ? "update" : "create"} site.`,
+        description: `Failed to ${editingSite ? "update" : "create"} site. ${error?.message || "Unknown error"}`,
         variant: "destructive",
       });
     },
