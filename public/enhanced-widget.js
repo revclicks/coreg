@@ -199,7 +199,9 @@ class EnhancedCoRegWidget {
     const emailInput = document.getElementById('email-input');
     const email = emailInput.value.trim();
     
-    if (!email || !email.includes('@')) {
+    // Proper email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || !emailRegex.test(email)) {
       alert('Please enter a valid email address');
       return;
     }
