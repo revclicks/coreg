@@ -67,7 +67,11 @@ export default function AddSiteModal({ open, onClose, editingSite }: AddSiteModa
       }
     },
     onSuccess: () => {
+      // Invalidate all sites-related queries
       queryClient.invalidateQueries({ queryKey: ["/api/sites"] });
+      queryClient.removeQueries({ queryKey: ["/api/sites"] });
+      queryClient.refetchQueries({ queryKey: ["/api/sites"] });
+      
       toast({
         title: editingSite ? "Site updated" : "Site created",
         description: `Site has been ${editingSite ? "updated" : "created"} successfully.`,

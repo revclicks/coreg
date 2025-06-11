@@ -3,7 +3,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Copy } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import AddSiteModal from "@/components/modals/add-site-modal";
@@ -14,8 +14,10 @@ export default function Sites() {
   const [editingSite, setEditingSite] = useState<Site | null>(null);
   const { toast } = useToast();
 
-  const { data: sites, isLoading } = useQuery<Site[]>({
+  const { data: sites, isLoading, refetch: refetchSites } = useQuery<Site[]>({
     queryKey: ["/api/sites"],
+    staleTime: 0,
+    gcTime: 0,
   });
 
   const deleteMutation = useMutation({
@@ -87,10 +89,21 @@ export default function Sites() {
       <Card>
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-slate-800">Site Manager</h3>
-          <Button onClick={() => setShowAddModal(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Site
-          </Button>
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetchSites()}
+              className="gap-2"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </Button>
+            <Button onClick={() => setShowAddModal(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Site
+            </Button>
+          </div>
         </div>
         <CardContent className="p-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
