@@ -320,6 +320,7 @@
                 // Initialize the enhanced widget for senior benefits
                 seniorWidget = new EnhancedCoRegWidget();
                 seniorWidget.siteId = 3; // Senior Benefits site ID
+                window.currentWidget = seniorWidget; // Make globally accessible
                 console.log('Widget initialized with site ID:', seniorWidget.siteId);
                 seniorWidget.init();
             } catch (error) {

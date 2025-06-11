@@ -177,7 +177,7 @@ class EnhancedCoRegWidget {
                  style="width: 100%; padding: ${padding}; border: 2px solid #e5e7eb; border-radius: 8px; font-size: ${fontSize}; box-sizing: border-box;">
         </div>
         
-        <button onclick="enhancedCoregWidget.submitEmail()" 
+        <button onclick="window.currentWidget.submitEmail()" 
                 style="width: 100%; padding: ${padding}; background: ${buttonColor}; color: white; border: none; border-radius: 8px; font-size: ${fontSize}; font-weight: 600; cursor: pointer;">
           ${isSeniorSite ? '🛒 Get My Savings Now!' : 'Start Survey'}
         </button>
@@ -269,18 +269,18 @@ class EnhancedCoRegWidget {
         <div style="margin-bottom: 30px;">
           <label style="display: block; margin-bottom: 10px; color: #374151; font-weight: 600; font-size: ${labelSize};">Gender</label>
           <div style="display: flex; gap: 15px;">
-            <button type="button" id="gender-male" onclick="enhancedCoregWidget.selectGender('Male')" 
+            <button type="button" id="gender-male" onclick="window.currentWidget.selectGender('Male')" 
                     style="flex: 1; padding: ${padding}; border: 2px solid #e5e7eb; border-radius: 8px; background: white; cursor: pointer; font-size: ${fontSize};">
               Male
             </button>
-            <button type="button" id="gender-female" onclick="enhancedCoregWidget.selectGender('Female')" 
+            <button type="button" id="gender-female" onclick="window.currentWidget.selectGender('Female')" 
                     style="flex: 1; padding: ${padding}; border: 2px solid #e5e7eb; border-radius: 8px; background: white; cursor: pointer; font-size: ${fontSize};">
               Female
             </button>
           </div>
         </div>
         
-        <button onclick="enhancedCoregWidget.submitPersonalInfo()" 
+        <button onclick="window.currentWidget.submitPersonalInfo()" 
                 style="width: 100%; padding: ${buttonPadding}; background: ${buttonColor}; color: white; border: none; border-radius: 8px; font-size: ${fontSize}; font-weight: 600; cursor: pointer;">
           ${isSeniorSite ? '🎯 Find My Benefits' : 'Continue to Questions'}
         </button>
