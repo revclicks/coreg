@@ -21,28 +21,22 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { insertSiteSchema, type Site } from "@shared/schema";
+import type { Site } from "@shared/schema";
 
 const formSchema = z.object({
   name: z.string().min(1, "Site name is required"),
   domain: z.string().min(1, "Domain is required"),
   vertical: z.string().min(1, "Vertical is required"),
-  excludedVerticals: z.array(z.string()).optional().default([]),
+  excludedVerticals: z.array(z.string()).default([]),
   active: z.boolean().default(true),
   flowConfig: z.object({
-    type: z.enum(["progressive", "front_loaded", "minimal"]).default("progressive"),
-    questionsPerAd: z.number().min(1).max(5).default(2),
-    maxQuestions: z.number().min(1).max(20).default(6),
-    maxAds: z.number().min(1).max(10).default(3),
-    requireEmail: z.boolean().default(true)
-  }).default({
-    type: "progressive",
-    questionsPerAd: 2,
-    maxQuestions: 6,
-    maxAds: 3,
-    requireEmail: true
+    type: z.enum(["progressive", "front_loaded", "minimal"]),
+    questionsPerAd: z.number().min(1).max(5),
+    maxQuestions: z.number().min(1).max(20),
+    maxAds: z.number().min(1).max(10),
+    requireEmail: z.boolean()
   })
 });
 
@@ -78,26 +72,28 @@ export default function AddSiteModal({ open, onClose, editingSite }: AddSiteModa
   const mutation = useMutation({
     mutationFn: async (data: z.infer<typeof formSchema>) => {
       console.log("🚀 Submitting site data:", data);
-      try {
-        if (editingSite) {
-          const result = await apiRequest(`/api/sites/${editingSite.id}`, {
-            method: "PUT",
-            body: JSON.stringify(data)
-          });
-          console.log("✅ Site update successful:", result);
-          return await result.json();
-        } else {
-          const result = await apiRequest("/api/sites", {
-            method: "POST",
-            body: JSON.stringify(data)
-          });
-          console.log("✅ Site creation successful:", result);
-          return await result.json();
-        }
-      } catch (error) {
-        console.error("❌ Site submission error:", error);
-        throw error;
+      
+      const url = editingSite ? `/api/sites/${editingSite.id}` : "/api/sites";
+      const method = editingSite ? "PUT" : "POST";
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Site submission error:", errorText);
+        throw new Error(`${response.status}: ${errorText}`);
       }
+
+      const result = await response.json();
+      console.log("✅ Site submission successful:", result);
+      return result;
     },
     onSuccess: (data) => {
       console.log("🎉 Site mutation success callback:", data);
@@ -114,7 +110,7 @@ export default function AddSiteModal({ open, onClose, editingSite }: AddSiteModa
       onClose();
       form.reset();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("💥 Site mutation error callback:", error);
       toast({
         title: "Error",
@@ -125,6 +121,8 @@ export default function AddSiteModal({ open, onClose, editingSite }: AddSiteModa
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
+    console.log("📝 Form submit called with data:", data);
+    console.log("📋 Form errors:", form.formState.errors);
     mutation.mutate(data);
   };
 
@@ -183,17 +181,17 @@ export default function AddSiteModal({ open, onClose, editingSite }: AddSiteModa
               name="vertical"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Site Vertical</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormLabel>Primary Vertical</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select vertical" />
+                        <SelectValue placeholder="Select a vertical" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {verticals.map((vertical) => (
-                        <SelectItem key={vertical} value={vertical} className="capitalize">
-                          {vertical}
+                        <SelectItem key={vertical} value={vertical}>
+                          {vertical.charAt(0).toUpperCase() + vertical.slice(1)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -204,23 +202,20 @@ export default function AddSiteModal({ open, onClose, editingSite }: AddSiteModa
             />
 
             <div>
-              <FormLabel className="text-base">Excluded Campaign Verticals</FormLabel>
-              <p className="text-sm text-slate-500 mb-3">
-                Select verticals that should NOT be shown on this site
-              </p>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <FormLabel>Excluded Verticals</FormLabel>
+              <div className="grid grid-cols-2 gap-2 mt-2">
                 {verticals.map((vertical) => (
                   <div key={vertical} className="flex items-center space-x-2">
                     <Checkbox
                       id={`exclude-${vertical}`}
-                      checked={(form.watch("excludedVerticals") || []).includes(vertical)}
-                      onCheckedChange={(checked) => handleVerticalToggle(vertical, checked as boolean)}
+                      checked={form.watch("excludedVerticals")?.includes(vertical) || false}
+                      onCheckedChange={(checked: boolean) => handleVerticalToggle(vertical, checked)}
                     />
                     <label
                       htmlFor={`exclude-${vertical}`}
-                      className="text-sm text-slate-700 capitalize cursor-pointer"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                     >
-                      {vertical}
+                      {vertical.charAt(0).toUpperCase() + vertical.slice(1)}
                     </label>
                   </div>
                 ))}
@@ -235,7 +230,7 @@ export default function AddSiteModal({ open, onClose, editingSite }: AddSiteModa
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">Active</FormLabel>
                     <div className="text-sm text-muted-foreground">
-                      Enable this site for ad serving
+                      Enable this site for campaign targeting
                     </div>
                   </div>
                   <FormControl>
@@ -248,11 +243,19 @@ export default function AddSiteModal({ open, onClose, editingSite }: AddSiteModa
               )}
             />
 
-            <div className="flex items-center justify-end space-x-4 pt-4 border-t border-slate-200">
-              <Button type="button" variant="outline" onClick={onClose}>
+            <div className="flex justify-end space-x-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onClose}
+                disabled={mutation.isPending}
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={mutation.isPending}>
+              <Button
+                type="submit"
+                disabled={mutation.isPending}
+              >
                 {mutation.isPending ? "Saving..." : editingSite ? "Update Site" : "Create Site"}
               </Button>
             </div>
