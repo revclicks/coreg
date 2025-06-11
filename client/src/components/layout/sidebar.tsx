@@ -16,6 +16,7 @@ const navigation = [
   { name: "Data Collection", href: "/data", icon: Database },
   { name: "Lead Collection", href: "/lead-collection", icon: UserCheck },
   { name: "Lead Widget Test", href: "/lead-widget-test", icon: Smartphone },
+  { name: "Senior Benefits Demo", href: "/senior-benefits-demo", icon: Users },
 ];
 
 export default function Sidebar() {

@@ -13,6 +13,7 @@ class EnhancedCoRegWidget {
     this.adsShown = [];
     this.currentCampaignId = null;
     this.currentCampaignPixels = [];
+    this.siteId = null; // Will be set externally
   }
 
   async init() {
@@ -144,38 +145,45 @@ class EnhancedCoRegWidget {
     this.createContainer();
     this.container.style.display = 'block';
     
+    const isSeniorSite = this.siteId === 3;
+    const headerColor = isSeniorSite ? '#059669' : '#1e3a8a';
+    const buttonColor = isSeniorSite ? '#059669' : '#3b82f6';
+    const fontSize = isSeniorSite ? '18px' : '16px';
+    const titleSize = isSeniorSite ? '28px' : '24px';
+    const padding = isSeniorSite ? '18px' : '15px';
+    
     this.container.innerHTML = `
       <!-- Progress Bar -->
       <div style="background: #e5e7eb; height: 4px;">
-        <div style="background: #3b82f6; height: 100%; width: ${this.progress.completionRate}%; transition: width 0.3s;"></div>
+        <div style="background: ${buttonColor}; height: 100%; width: ${this.progress.completionRate}%; transition: width 0.3s;"></div>
       </div>
       
       <!-- Header -->
-      <div style="background: #1e3a8a; color: white; text-align: center; padding: 20px; font-size: 18px; font-weight: 600;">
-        Quick Survey - Get Started
+      <div style="background: ${headerColor}; color: white; text-align: center; padding: 20px; font-size: ${isSeniorSite ? '20px' : '18px'}; font-weight: 600;">
+        ${isSeniorSite ? '🎁 Claim Your Senior Benefits' : 'Quick Survey - Get Started'}
       </div>
       
       <!-- Email Form -->
       <div style="background: white; padding: 40px;">
-        <h2 style="margin: 0 0 10px 0; color: #1f2937; font-size: 24px; font-weight: 600; text-align: center;">
-          Enter Your Email to Begin
+        <h2 style="margin: 0 0 10px 0; color: #1f2937; font-size: ${titleSize}; font-weight: 600; text-align: center;">
+          ${isSeniorSite ? 'Get Your Exclusive Senior Discounts' : 'Enter Your Email to Begin'}
         </h2>
-        <p style="margin: 0 0 30px 0; color: #6b7280; text-align: center; font-size: 16px;">
-          Answer a few quick questions and discover offers tailored for you
+        <p style="margin: 0 0 30px 0; color: #6b7280; text-align: center; font-size: ${fontSize};">
+          ${isSeniorSite ? 'Enter your email to unlock savings on groceries, prescriptions, and more!' : 'Answer a few quick questions and discover offers tailored for you'}
         </p>
         
         <div style="margin-bottom: 20px;">
-          <input type="email" id="email-input" placeholder="Enter your email address" 
-                 style="width: 100%; padding: 15px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px; box-sizing: border-box;">
+          <input type="email" id="email-input" placeholder="${isSeniorSite ? 'Your email address' : 'Enter your email address'}" 
+                 style="width: 100%; padding: ${padding}; border: 2px solid #e5e7eb; border-radius: 8px; font-size: ${fontSize}; box-sizing: border-box;">
         </div>
         
         <button onclick="enhancedCoregWidget.submitEmail()" 
-                style="width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
-          Start Survey
+                style="width: 100%; padding: ${padding}; background: ${buttonColor}; color: white; border: none; border-radius: 8px; font-size: ${fontSize}; font-weight: 600; cursor: pointer;">
+          ${isSeniorSite ? '🛒 Get My Savings Now!' : 'Start Survey'}
         </button>
         
-        <p style="margin-top: 20px; color: #6b7280; font-size: 12px; text-align: center;">
-          By continuing, you agree to our Terms of Service and Privacy Policy
+        <p style="margin-top: 20px; color: #6b7280; font-size: ${isSeniorSite ? '14px' : '12px'}; text-align: center;">
+          ${isSeniorSite ? 'Secure and confidential. Designed specifically for seniors 55+' : 'By continuing, you agree to our Terms of Service and Privacy Policy'}
         </p>
       </div>
       
