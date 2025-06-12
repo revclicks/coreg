@@ -374,8 +374,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Questions endpoints
-  app.get("/api/questions", async (req, res) => {
+  // Questions endpoints (protected)
+  app.get("/api/questions", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const questions = await storage.getQuestions();
       res.json(questions);
@@ -384,7 +384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/questions", async (req, res) => {
+  app.post("/api/questions", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const questionData = insertQuestionSchema.parse(req.body);
       const question = await storage.createQuestion(questionData);
@@ -398,7 +398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/questions/:id", async (req, res) => {
+  app.put("/api/questions/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const id = parseInt(req.params.id);
       const questionData = insertQuestionSchema.partial().parse(req.body);
@@ -417,7 +417,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/questions/:id", async (req, res) => {
+  app.delete("/api/questions/:id", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const id = parseInt(req.params.id);
       const success = await storage.deleteQuestion(id);
@@ -431,8 +431,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Campaigns endpoints
-  app.get("/api/campaigns", async (req, res) => {
+  // Campaigns endpoints (protected)
+  app.get("/api/campaigns", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {
       const campaigns = await storage.getCampaigns();
       res.json(campaigns);
