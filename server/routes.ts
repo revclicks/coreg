@@ -27,6 +27,13 @@ interface AuthenticatedRequest extends Request {
   user?: AdminUser;
 }
 
+async function requireMasterAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  if (!req.user || req.user.role !== "master_admin") {
+    return res.status(403).json({ error: "Master admin access required" });
+  }
+  next();
+}
+
 async function authenticateToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const token = req.cookies?.adminToken;
 

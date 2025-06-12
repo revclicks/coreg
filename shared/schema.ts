@@ -10,7 +10,7 @@ export const adminUsers = pgTable("admin_users", {
   passwordHash: text("password_hash").notNull(),
   firstName: varchar("first_name", { length: 100 }),
   lastName: varchar("last_name", { length: 100 }),
-  role: text("role").notNull().default("admin"), // admin, super_admin
+  role: text("role").notNull().default("sub_admin"), // master_admin, sub_admin
   active: boolean("active").notNull().default(true),
   lastLoginAt: timestamp("last_login_at"),
   createdAt: timestamp("created_at").defaultNow(),
