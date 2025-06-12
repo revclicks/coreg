@@ -3,15 +3,33 @@ import { apiRequest } from "@/lib/queryClient";
 import type { AdminUser, LoginRequest, RegisterRequest } from "@shared/schema";
 
 export function useAuth() {
-  const { data: user, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["/api/auth/me"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/me", {
+        credentials: "include",
+      });
+
+      if (res.status === 401) {
+        return null;
+      }
+
+      if (!res.ok) {
+        throw new Error(`${res.status}: ${res.statusText}`);
+      }
+
+      return await res.json();
+    },
     retry: false,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   return {
-    user: user?.user as AdminUser | undefined,
+    user: data as AdminUser | undefined,
     isLoading,
-    isAuthenticated: !!user?.user,
+    isAuthenticated: !!data && !error,
     error,
   };
 }
