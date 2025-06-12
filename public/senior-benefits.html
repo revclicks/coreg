@@ -429,6 +429,11 @@
             // Hide email step and show personal info step
             document.getElementById('email-step').style.display = 'none';
             document.getElementById('personal-info-step').style.display = 'block';
+            
+            // Pre-populate personal info fields with UTM data
+            setTimeout(() => {
+                prePopulatePersonalInfoFields();
+            }, 100);
         }
         
         // Gender selection function
@@ -480,7 +485,10 @@
             };
             
             try {
-                // Create session on backend
+                // Get tracking data from UTM parameters
+                const trackingData = getTrackingData();
+                
+                // Create session on backend with UTM tracking data
                 const sessionResponse = await fetch('/api/sessions', {
                     method: 'POST',
                     headers: {
@@ -492,7 +500,10 @@
                         device: 'desktop',
                         userAgent: navigator.userAgent,
                         email: userEmail,
-                        userProfile: userProfile
+                        userProfile: {
+                            ...userProfile,
+                            trackingData: trackingData // Include UTM and tracking data
+                        }
                     })
                 });
                 
@@ -529,8 +540,122 @@
             }
         }
         
+        // UTM Parameter Capture and Form Pre-population
+        let utmData = {};
+        
+        function parseUTMParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            
+            // Standard UTM parameters
+            utmData.utm_source = urlParams.get('utm_source');
+            utmData.utm_medium = urlParams.get('utm_medium');
+            utmData.utm_campaign = urlParams.get('utm_campaign');
+            utmData.utm_term = urlParams.get('utm_term');
+            utmData.utm_content = urlParams.get('utm_content');
+            
+            // Custom user data parameters (common traffic source formats)
+            utmData.email = urlParams.get('email') || urlParams.get('utm_email') || urlParams.get('user_email');
+            utmData.first_name = urlParams.get('fname') || urlParams.get('first_name') || urlParams.get('utm_fname') || urlParams.get('firstname');
+            utmData.last_name = urlParams.get('lname') || urlParams.get('last_name') || urlParams.get('utm_lname') || urlParams.get('lastname');
+            utmData.phone = urlParams.get('phone') || urlParams.get('utm_phone') || urlParams.get('phone_number');
+            utmData.age = urlParams.get('age') || urlParams.get('utm_age');
+            utmData.birth_year = urlParams.get('birth_year') || urlParams.get('utm_birth_year') || urlParams.get('byear');
+            utmData.gender = urlParams.get('gender') || urlParams.get('utm_gender');
+            utmData.zip = urlParams.get('zip') || urlParams.get('zipcode') || urlParams.get('utm_zip');
+            utmData.state = urlParams.get('state') || urlParams.get('utm_state');
+            utmData.city = urlParams.get('city') || urlParams.get('utm_city');
+            
+            // Additional tracking parameters
+            utmData.click_id = urlParams.get('clickid') || urlParams.get('click_id') || urlParams.get('cid');
+            utmData.affiliate_id = urlParams.get('affid') || urlParams.get('affiliate_id') || urlParams.get('aid');
+            utmData.sub_id = urlParams.get('subid') || urlParams.get('sub_id') || urlParams.get('s1');
+            utmData.sub_id_2 = urlParams.get('subid2') || urlParams.get('sub_id_2') || urlParams.get('s2');
+            utmData.sub_id_3 = urlParams.get('subid3') || urlParams.get('sub_id_3') || urlParams.get('s3');
+            
+            console.log('UTM Data captured:', utmData);
+            
+            // Store UTM data for later use
+            sessionStorage.setItem('utmData', JSON.stringify(utmData));
+            
+            return utmData;
+        }
+        
+        function prePopulateEmailField() {
+            const emailInput = document.getElementById('email-input');
+            if (emailInput && utmData.email) {
+                emailInput.value = utmData.email;
+                console.log('Pre-populated email:', utmData.email);
+            }
+        }
+        
+        function prePopulatePersonalInfoFields() {
+            // Pre-populate form fields with UTM data
+            if (utmData.first_name) {
+                const firstNameInput = document.getElementById('first-name');
+                if (firstNameInput) firstNameInput.value = utmData.first_name;
+            }
+            
+            if (utmData.last_name) {
+                const lastNameInput = document.getElementById('last-name');
+                if (lastNameInput) lastNameInput.value = utmData.last_name;
+            }
+            
+            if (utmData.phone) {
+                const phoneInput = document.getElementById('phone');
+                if (phoneInput) phoneInput.value = utmData.phone;
+            }
+            
+            if (utmData.birth_year) {
+                const dobInput = document.getElementById('dob');
+                if (dobInput) dobInput.value = utmData.birth_year;
+            } else if (utmData.age) {
+                // Calculate birth year from age
+                const currentYear = new Date().getFullYear();
+                const estimatedBirthYear = currentYear - parseInt(utmData.age);
+                const dobInput = document.getElementById('dob');
+                if (dobInput) dobInput.value = estimatedBirthYear.toString();
+            }
+            
+            if (utmData.gender) {
+                const gender = utmData.gender.toLowerCase();
+                if (gender === 'male' || gender === 'm') {
+                    selectGender('Male');
+                } else if (gender === 'female' || gender === 'f') {
+                    selectGender('Female');
+                }
+            }
+            
+            console.log('Pre-populated personal info fields');
+        }
+        
+        function getTrackingData() {
+            // Return tracking data to include with form submissions
+            return {
+                utm_source: utmData.utm_source,
+                utm_medium: utmData.utm_medium,
+                utm_campaign: utmData.utm_campaign,
+                utm_term: utmData.utm_term,
+                utm_content: utmData.utm_content,
+                click_id: utmData.click_id,
+                affiliate_id: utmData.affiliate_id,
+                sub_id: utmData.sub_id,
+                sub_id_2: utmData.sub_id_2,
+                sub_id_3: utmData.sub_id_3,
+                referrer: document.referrer,
+                landing_page: window.location.href,
+                user_agent: navigator.userAgent,
+                timestamp: new Date().toISOString()
+            };
+        }
+
         // Allow Enter key to submit forms
         document.addEventListener('DOMContentLoaded', function() {
+            // Parse UTM parameters on page load
+            parseUTMParameters();
+            
+            // Pre-populate email field if available
+            prePopulateEmailField();
+            
             const emailInput = document.getElementById('email-input');
             if (emailInput) {
                 emailInput.addEventListener('keypress', function(e) {
