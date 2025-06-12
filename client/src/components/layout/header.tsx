@@ -79,6 +79,9 @@ export default function Header() {
                   <p className="text-xs leading-none text-muted-foreground">
                     {user?.email}
                   </p>
+                  <p className="text-xs leading-none text-blue-600 font-medium">
+                    {user?.role === 'master_admin' ? 'Master Admin' : 'Sub Admin'}
+                  </p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
