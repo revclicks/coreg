@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { db } from "./db";
@@ -7,19 +7,222 @@ import {
   insertUserSessionSchema, insertQuestionResponseSchema, insertCampaignClickSchema,
   insertAudienceSegmentSchema, insertLeadSchema,
   questions, campaigns, sites, userSessions, questionResponses, campaignImpressions, campaignClicks, campaignConversions,
-  audienceSegments, userSegmentMemberships, questionImpressions, leads
+  audienceSegments, userSegmentMemberships, questionImpressions, leads,
+  adminUsers, adminSessions, loginSchema, registerSchema,
+  type AdminUser, type AdminSession
 } from "@shared/schema";
 import { eq, desc, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
 import { nanoid } from "nanoid";
 import { readFileSync } from "fs";
 import { join } from "path";
+import bcrypt from "bcryptjs";
+import cookieParser from "cookie-parser";
 import { rtbEngine } from "./rtb-engine";
 import { personalizationEngine } from "./personalization-engine";
 import { leadWebhookService } from "./lead-webhook-service";
 
+// Authentication middleware
+interface AuthenticatedRequest extends Request {
+  user?: AdminUser;
+}
+
+async function authenticateToken(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  const token = req.cookies?.adminToken;
+
+  if (!token) {
+    return res.status(401).json({ error: "Access token required" });
+  }
+
+  try {
+    const [session] = await db
+      .select()
+      .from(adminSessions)
+      .where(eq(adminSessions.id, token))
+      .limit(1);
+
+    if (!session || session.expiresAt < new Date()) {
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+
+    const [user] = await db
+      .select()
+      .from(adminUsers)
+      .where(eq(adminUsers.id, session.userId))
+      .limit(1);
+
+    if (!user || !user.active) {
+      return res.status(401).json({ error: "User not found or inactive" });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error("Auth middleware error:", error);
+    return res.status(500).json({ error: "Authentication error" });
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  
+  // Add cookie parser middleware
+  app.use(cookieParser());
+
+  // Authentication routes
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const validatedData = registerSchema.parse(req.body);
+      
+      // Check if user already exists
+      const [existingUser] = await db
+        .select()
+        .from(adminUsers)
+        .where(eq(adminUsers.email, validatedData.email))
+        .limit(1);
+
+      if (existingUser) {
+        return res.status(400).json({ error: "User already exists" });
+      }
+
+      // Hash password
+      const passwordHash = await bcrypt.hash(validatedData.password, 12);
+
+      // Create user
+      const [newUser] = await db
+        .insert(adminUsers)
+        .values({
+          email: validatedData.email,
+          passwordHash,
+          firstName: validatedData.firstName,
+          lastName: validatedData.lastName,
+        })
+        .returning();
+
+      // Create session
+      const sessionId = nanoid(32);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+      await db.insert(adminSessions).values({
+        id: sessionId,
+        userId: newUser.id,
+        expiresAt,
+      });
+
+      // Set cookie
+      res.cookie("adminToken", sessionId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.json({
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          role: newUser.role,
+        },
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors[0].message });
+      }
+      res.status(500).json({ error: "Registration failed" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const validatedData = loginSchema.parse(req.body);
+
+      // Find user
+      const [user] = await db
+        .select()
+        .from(adminUsers)
+        .where(eq(adminUsers.email, validatedData.email))
+        .limit(1);
+
+      if (!user || !user.active) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      // Verify password
+      const isValidPassword = await bcrypt.compare(validatedData.password, user.passwordHash);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+
+      // Update last login
+      await db
+        .update(adminUsers)
+        .set({ lastLoginAt: new Date() })
+        .where(eq(adminUsers.id, user.id));
+
+      // Create session
+      const sessionId = nanoid(32);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+      await db.insert(adminSessions).values({
+        id: sessionId,
+        userId: user.id,
+        expiresAt,
+      });
+
+      // Set cookie
+      res.cookie("adminToken", sessionId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.json({
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+        },
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors[0].message });
+      }
+      res.status(500).json({ error: "Login failed" });
+    }
+  });
+
+  app.post("/api/auth/logout", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const token = req.cookies?.adminToken;
+      if (token) {
+        await db.delete(adminSessions).where(eq(adminSessions.id, token));
+      }
+      
+      res.clearCookie("adminToken");
+      res.json({ message: "Logged out successfully" });
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.status(500).json({ error: "Logout failed" });
+    }
+  });
+
+  app.get("/api/auth/me", authenticateToken, (req: AuthenticatedRequest, res) => {
+    res.json({
+      user: {
+        id: req.user!.id,
+        email: req.user!.email,
+        firstName: req.user!.firstName,
+        lastName: req.user!.lastName,
+        role: req.user!.role,
+      },
+    });
+  });
+
   // Widget script serving
   app.get("/sites/:siteCode.js", async (req, res) => {
     try {
