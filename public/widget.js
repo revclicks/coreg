@@ -21,8 +21,8 @@
   }
 
   if (!siteCode) {
-    console.error('CoReg: Invalid site code');
-    return;
+    console.warn('CoReg: No site code found, widget available for manual configuration');
+    siteCode = 'default'; // Set default for library usage
   }
 
   // Configuration
