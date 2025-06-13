@@ -712,13 +712,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Restore state if provided
       if (currentState) {
+        console.log('📊 RESTORING STATE:', currentState);
         flowController.setState(currentState);
+        console.log('📊 STATE AFTER RESTORE:', flowController.getState());
       }
       
       // Handle specific actions first
       if (action === 'ad_completed') {
         console.log('🎯 AD COMPLETED - updating flow state');
+        console.log('📊 STATE BEFORE AD COMPLETE:', flowController.getState());
         flowController.completeAd();
+        console.log('📊 STATE AFTER AD COMPLETE:', flowController.getState());
       }
       
       const nextAction = flowController.getNextAction();
