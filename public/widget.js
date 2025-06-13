@@ -329,6 +329,25 @@
           this.nextQuestion();
         });
       });
+
+      // Handle ad click buttons
+      const adClickButtons = this.container.querySelectorAll('.widget-ad-click-btn');
+      adClickButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+          const url = e.target.getAttribute('data-url');
+          console.log('Ad click button clicked:', url);
+          this.clickAd(url);
+        });
+      });
+
+      // Handle skip buttons
+      const skipButtons = this.container.querySelectorAll('.widget-skip-btn');
+      skipButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          console.log('Skip button clicked');
+          this.skipAd();
+        });
+      });
     }
 
     renderAnswerOptions(question) {
@@ -802,12 +821,12 @@
           </p>
           
           <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 20px;">
-            <button onclick="coregWidget.clickAd('${campaign.url}')" 
+            <button class="widget-ad-click-btn" data-url="${campaign.url}"
                     style="padding: 15px 30px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; transition: background 0.2s;">
               Learn More
             </button>
             
-            <button onclick="coregWidget.skipAd()" 
+            <button class="widget-skip-btn"
                     style="padding: 10px 20px; background: #6b7280; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
               Skip
             </button>
@@ -824,6 +843,9 @@
           ×
         </button>
       `;
+      
+      // Add event listeners for ad buttons
+      this.attachEventListeners();
     }
 
     showThankYou() {
