@@ -508,8 +508,8 @@
                 });
                 
                 if (sessionResponse.ok) {
-                    // Continue to questions flow using the widget system
-                    alert('Profile completed! Continuing to questions...');
+                    // Smoothly transition to questions flow using the widget system
+                    console.log('Profile completed! Loading questions...');
                     
                     // Initialize widget for questions flow
                     const questionsResponse = await fetch('/api/flow/next-action', {
@@ -520,16 +520,23 @@
                         body: JSON.stringify({
                             sessionId: currentSessionId,
                             siteCode: 'L-2a1xhXBi',
-                            action: 'complete_personal_info'
+                            currentState: {
+                                currentPhase: "questions",
+                                questionsAnswered: 0,
+                                adsShown: 0,
+                                questionBatch: 0,
+                                shouldShowAd: false,
+                                isComplete: false
+                            }
                         })
                     });
                     
                     if (questionsResponse.ok) {
                         const result = await questionsResponse.json();
-                        console.log('Next action:', result.action);
+                        console.log('Flow result:', result);
                         
-                        // Redirect to the dashboard questionnaire flow
-                        window.location.href = '/questions?session=' + currentSessionId;
+                        // Redirect to the widget-based questionnaire flow
+                        window.location.href = `/widget.html?session=${currentSessionId}&site=L-2a1xhXBi`;
                     }
                 } else {
                     throw new Error('Failed to create session');

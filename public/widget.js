@@ -38,8 +38,15 @@
       this.responses = [];
       this.container = null;
       this.sessionCreated = false;
+      this.sessionId = sessionId; // Allow external override
+      this.siteCode = siteCode; // Allow external override
+      this.apiBase = API_BASE; // Allow external override
+      this.currentState = null; // Allow external state setting
       
-      this.init();
+      // Don't auto-init if being used externally
+      if (!window.CoRegWidget) {
+        this.init();
+      }
     }
 
     async init() {
@@ -61,7 +68,7 @@
 
     async loadQuestions() {
       try {
-        const response = await fetch(`${API_BASE}/api/questions`);
+        const response = await fetch(`${this.apiBase}/api/questions`);
         if (!response.ok) throw new Error('Failed to load questions');
         
         const allQuestions = await response.json();
@@ -77,7 +84,7 @@
       
       try {
         const sessionData = {
-          sessionId: sessionId,
+          sessionId: this.sessionId,
           siteId: null, // Will be set by server based on site code
           device: this.getDeviceType(),
           state: this.getUserState(),
@@ -85,7 +92,7 @@
           ipAddress: null // Will be set by server
         };
 
-        const response = await fetch(`${API_BASE}/api/sessions`, {
+        const response = await fetch(`${this.apiBase}/api/sessions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(sessionData)

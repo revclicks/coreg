@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senior Benefits - Questions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #f0fdf4 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .widget-container {
+            padding: 40px;
+            min-height: 400px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #059669;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .loading h3 {
+            color: #374151;
+            margin-bottom: 10px;
+        }
+        
+        .loading p {
+            color: #6b7280;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 60px 20px;
+            color: #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎯 Senior Benefits Questions</h1>
+            <p>Help us match you with the best savings opportunities</p>
+        </div>
+        
+        <div class="widget-container">
+            <div class="loading" id="loading">
+                <div class="loading-spinner"></div>
+                <h3>Loading Your Questions...</h3>
+                <p>We're preparing personalized questions based on your profile</p>
+            </div>
+            
+            <div class="error" id="error" style="display: none;">
+                <h3>Something went wrong</h3>
+                <p>Please try refreshing the page or contact support</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get session and site from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('session');
+        const siteCode = urlParams.get('site');
+        
+        console.log('Widget page loaded:', { sessionId, siteCode });
+        
+        // Initialize the widget
+        async function initializeWidget() {
+            try {
+                if (!sessionId || !siteCode) {
+                    throw new Error('Missing session or site parameters');
+                }
+                
+                // Hide loading, show widget container
+                document.getElementById('loading').style.display = 'none';
+                
+                // Create widget script dynamically
+                const script = document.createElement('script');
+                script.src = '/widget.js';
+                script.onload = function() {
+                    // Initialize the widget
+                    const widget = new CoRegWidget();
+                    
+                    // Configure the widget with session data
+                    widget.sessionId = sessionId;
+                    widget.siteCode = siteCode;
+                    widget.apiBase = '';
+                    
+                    // Override the container to use our widget-container
+                    widget.container = document.querySelector('.widget-container');
+                    
+                    // Start the widget flow from questions phase (skip email capture)
+                    widget.currentState = {
+                        currentPhase: "questions",
+                        questionsAnswered: 0,
+                        adsShown: 0,
+                        questionBatch: 0,
+                        shouldShowAd: false,
+                        isComplete: false
+                    };
+                    
+                    // Initialize and start from questions
+                    widget.init().then(() => {
+                        console.log('Widget initialized successfully');
+                        // Skip email capture and go directly to questions
+                        widget.showCurrentQuestion();
+                    }).catch(error => {
+                        console.error('Widget initialization error:', error);
+                        showError();
+                    });
+                };
+                script.onerror = function() {
+                    console.error('Failed to load widget script');
+                    showError();
+                };
+                
+                document.head.appendChild(script);
+                
+            } catch (error) {
+                console.error('Widget page error:', error);
+                showError();
+            }
+        }
+        
+        function showError() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', initializeWidget);
+    </script>
+</body>
+</html>
