@@ -381,6 +381,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Public questions endpoint for widgets (no auth required)
+  app.get("/api/widget/questions", async (req, res) => {
+    try {
+      const questions = await storage.getQuestions();
+      // Only return active questions for widgets
+      const activeQuestions = questions.filter(q => q.active);
+      res.json(activeQuestions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch questions" });
+    }
+  });
+
   // Questions endpoints (protected)
   app.get("/api/questions", authenticateToken, async (req: AuthenticatedRequest, res) => {
     try {

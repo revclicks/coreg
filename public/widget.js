@@ -70,11 +70,14 @@
 
     async loadQuestions() {
       try {
-        const response = await fetch(`${this.apiBase}/api/questions`);
+        console.log('Loading questions from:', `${this.apiBase}/api/widget/questions`);
+        const response = await fetch(`${this.apiBase}/api/widget/questions`);
         if (!response.ok) throw new Error('Failed to load questions');
         
         const allQuestions = await response.json();
-        this.questions = allQuestions.filter(q => q.active).sort((a, b) => a.priority - b.priority);
+        console.log('Raw questions received:', allQuestions.length);
+        this.questions = allQuestions.sort((a, b) => a.priority - b.priority);
+        console.log('Questions loaded:', this.questions.length);
       } catch (error) {
         console.error('Error loading questions:', error);
         this.questions = [];
@@ -115,20 +118,23 @@
     }
 
     createContainer() {
-      // Create widget container as inline element
-      this.container = document.createElement('div');
-      this.container.id = 'coreg-widget';
-      this.container.style.cssText = `
-        width: 100%;
-        max-width: 600px;
-        margin: 20px auto;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        display: none;
-      `;
+      // Only create container if one doesn't exist or hasn't been set externally
+      if (!this.container) {
+        // Create widget container as inline element
+        this.container = document.createElement('div');
+        this.container.id = 'coreg-widget';
+        this.container.style.cssText = `
+          width: 100%;
+          max-width: 600px;
+          margin: 20px auto;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+          display: none;
+        `;
 
-      // Find the target container or append to body
-      const targetElement = document.getElementById('widget-target') || document.body;
-      targetElement.appendChild(this.container);
+        // Find the target container or append to body
+        const targetElement = document.getElementById('widget-target') || document.body;
+        targetElement.appendChild(this.container);
+      }
     }
 
     showLandingPage() {

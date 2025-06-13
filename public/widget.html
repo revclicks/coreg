@@ -138,6 +138,7 @@
                     // Initialize the widget
                     widget.init().then(() => {
                         console.log('Widget initialized successfully');
+                        console.log('Questions loaded:', widget.questions.length);
                         
                         // Override the container to use our widget-container
                         const widgetContainer = document.querySelector('.widget-container');
@@ -146,6 +147,7 @@
                         widget.container.style.display = 'block';
                         
                         // Skip email capture and go directly to questions
+                        console.log('Starting questions...');
                         widget.showCurrentQuestion();
                     }).catch(error => {
                         console.error('Widget initialization error:', error);
