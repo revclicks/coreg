@@ -126,20 +126,24 @@ export class FlowController {
       return "complete";
     }
 
-    // Email capture phase
+    // Email capture phase (only at the beginning)
     if (this.state.currentPhase === "email_capture") {
       return "email_capture";
     }
 
-    // Personal info phase
+    // Personal info phase (only after email capture)
     if (this.state.currentPhase === "personal_info") {
       return "personal_info";
     }
 
-    // Check completion conditions
-    if (this.state.questionsAnswered >= this.config.maxQuestions || 
-        this.state.questionsAnswered >= this.availableQuestions.length) {
+    // Check if all questions are completed
+    const allQuestionsCompleted = this.state.questionsAnswered >= this.config.maxQuestions || 
+                                  this.state.questionsAnswered >= this.availableQuestions.length;
+
+    // If all questions are done, show remaining ads
+    if (allQuestionsCompleted) {
       if (this.state.adsShown < this.config.maxAds) {
+        this.state.currentPhase = "ads"; // Ensure we're in ads phase
         return "ad";
       } else {
         this.state.isComplete = true;
@@ -147,7 +151,7 @@ export class FlowController {
       }
     }
 
-    // Apply flow logic based on type
+    // Apply flow logic based on type for question/ad interleaving
     switch (this.config.type) {
       case "minimal":
         return this.getMinimalFlowAction();
