@@ -715,6 +715,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('📊 RESTORING STATE:', currentState);
         flowController.setState(currentState);
         console.log('📊 STATE AFTER RESTORE:', flowController.getState());
+      } else {
+        // For Senior Benefits flow, check if questions were already answered
+        const responses = await storage.getResponsesBySession(sessionId);
+        if (responses.length > 0) {
+          const uniqueQuestions = new Set(responses.map(r => r.questionId)).size;
+          console.log(`📊 INITIALIZING STATE: Found ${uniqueQuestions} answered questions from session`);
+          
+          // Set the questions answered count and move to ads phase
+          const initialState = flowController.getState();
+          initialState.questionsAnswered = uniqueQuestions;
+          initialState.currentPhase = "ads"; // Move to ads phase since questions are complete
+          flowController.setState(initialState);
+          console.log('📊 STATE AFTER QUESTION COUNT FIX:', flowController.getState());
+        }
       }
       
       // Handle specific actions first
