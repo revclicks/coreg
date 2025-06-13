@@ -393,11 +393,11 @@
 
     async saveResponse(response) {
       try {
-        await fetch(`${API_BASE}/api/responses`, {
+        await fetch(`${this.apiBase}/api/responses`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            sessionId: sessionId,
+            sessionId: this.sessionId,
             questionId: response.questionId,
             answer: response.answer
           })
@@ -409,11 +409,11 @@
 
     async trackQuestionView(questionId) {
       try {
-        await fetch(`${API_BASE}/api/question-views`, {
+        await fetch(`${this.apiBase}/api/question-views`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            sessionId: sessionId,
+            sessionId: this.sessionId,
             questionId: questionId,
             timestamp: new Date().toISOString()
           })
@@ -680,11 +680,11 @@
       
       // Save all collected data to database
       try {
-        await fetch(`${API_BASE}/api/collect-personal-info`, {
+        await fetch(`${this.apiBase}/api/collect-personal-info`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            sessionId: sessionId,
+            sessionId: this.sessionId,
             email: this.userEmail,
             firstName: firstName,
             lastName: lastName,
