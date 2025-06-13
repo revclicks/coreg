@@ -128,30 +128,23 @@
                 const script = document.createElement('script');
                 script.src = '/widget.js';
                 script.onload = function() {
+                    // Initialize the widget with session continuation
+                    const widget = new window.CoRegWidget();
+                    
+                    // Configure the widget for session continuation
+                    widget.continueFromSession(sessionId, siteCode);
+                    widget.apiBase = window.location.origin;
+                    
                     // Initialize the widget
-                    const widget = new CoRegWidget();
-                    
-                    // Configure the widget with session data
-                    widget.sessionId = sessionId;
-                    widget.siteCode = siteCode;
-                    widget.apiBase = '';
-                    
-                    // Override the container to use our widget-container
-                    widget.container = document.querySelector('.widget-container');
-                    
-                    // Start the widget flow from questions phase (skip email capture)
-                    widget.currentState = {
-                        currentPhase: "questions",
-                        questionsAnswered: 0,
-                        adsShown: 0,
-                        questionBatch: 0,
-                        shouldShowAd: false,
-                        isComplete: false
-                    };
-                    
-                    // Initialize and start from questions
                     widget.init().then(() => {
                         console.log('Widget initialized successfully');
+                        
+                        // Override the container to use our widget-container
+                        const widgetContainer = document.querySelector('.widget-container');
+                        widgetContainer.innerHTML = '';
+                        widget.container = widgetContainer;
+                        widget.container.style.display = 'block';
+                        
                         // Skip email capture and go directly to questions
                         widget.showCurrentQuestion();
                     }).catch(error => {

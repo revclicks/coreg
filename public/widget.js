@@ -54,8 +54,10 @@
         // Load questions
         await this.loadQuestions();
         
-        // Create session
-        await this.createSession();
+        // Create session only if not already provided
+        if (!this.sessionCreated) {
+          await this.createSession();
+        }
         
         // Create widget container but don't show it yet
         this.createContainer();
@@ -102,6 +104,14 @@
       } catch (error) {
         console.error('Error creating session:', error);
       }
+    }
+
+    // Method to continue from existing session (used by Senior Benefits flow)
+    continueFromSession(sessionId, siteCode) {
+      this.sessionId = sessionId;
+      this.siteCode = siteCode;
+      this.sessionCreated = true; // Mark as already created
+      console.log('Widget continuing from existing session:', { sessionId, siteCode });
     }
 
     createContainer() {
@@ -708,8 +718,8 @@
       try {
         // Request ad based on responses
         const adRequest = {
-          sessionId: sessionId,
-          siteCode: siteCode,
+          sessionId: this.sessionId,
+          siteCode: this.siteCode,
           questionResponses: this.responses,
           userProfile: {
             device: this.getDeviceType(),
@@ -718,7 +728,7 @@
           }
         };
 
-        const response = await fetch(`${API_BASE}/api/serve-ad`, {
+        const response = await fetch(`${this.apiBase}/api/serve-ad`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(adRequest)
@@ -901,11 +911,11 @@
         
         // Track click
         try {
-          await fetch(`${API_BASE}/api/clicks`, {
+          await fetch(`${this.apiBase}/api/clicks`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              sessionId: sessionId,
+              sessionId: this.sessionId,
               campaignId: this.currentCampaign.id,
               clickId: clickId,
               url: url
@@ -916,7 +926,7 @@
             campaignId: this.currentCampaign.id,
             campaignName: this.currentCampaign.name,
             clickId: clickId,
-            sessionId: sessionId
+            sessionId: this.sessionId
           });
         } catch (error) {
           console.error('CoReg: Error tracking click:', error);
@@ -948,6 +958,11 @@
     }
   }
 
-  // Initialize widget
-  window.coregWidget = new CoRegWidget();
+  // Make CoRegWidget available globally
+  window.CoRegWidget = CoRegWidget;
+  
+  // Initialize widget only if not being used as a library
+  if (!window.location.search.includes('session=')) {
+    window.coregWidget = new CoRegWidget();
+  }
 })();
