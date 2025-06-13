@@ -43,7 +43,7 @@ export class FlowController {
     this.state = {
       questionsAnswered: 0,
       adsShown: 0,
-      currentPhase: this.config.requireEmail ? "email_capture" : "questions",
+      currentPhase: "questions", // Start with questions for Senior Benefits flow
       questionBatch: 1,
       shouldShowAd: false,
       isComplete: false

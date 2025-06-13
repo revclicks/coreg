@@ -1030,9 +1030,13 @@
           // Flow is complete
           console.log('Flow complete, showing thank you');
           this.showThankYou();
+        } else if (flowResult.action === 'email_capture') {
+          // Should not happen after questions, treat as complete
+          console.log('Unexpected email_capture after ads, showing thank you');
+          this.showThankYou();
         } else {
           // Fallback to thank you
-          console.log('Unknown action, showing thank you');
+          console.log('Unknown action:', flowResult.action, 'showing thank you');
           this.showThankYou();
         }
       } catch (error) {
