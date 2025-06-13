@@ -636,7 +636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Flow management endpoint with A/B testing
   app.post("/api/flow/next-action", async (req, res) => {
     try {
-      const { sessionId, siteCode, currentState } = req.body;
+      const { sessionId, siteCode, currentState, action } = req.body;
       
       // Get site and questions for flow controller
       const site = await storage.getSiteByCode(siteCode);
@@ -713,6 +713,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Restore state if provided
       if (currentState) {
         flowController.setState(currentState);
+      }
+      
+      // Handle specific actions first
+      if (action === 'ad_completed') {
+        console.log('🎯 AD COMPLETED - updating flow state');
+        flowController.completeAd();
       }
       
       const nextAction = flowController.getNextAction();

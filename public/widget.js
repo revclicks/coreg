@@ -990,7 +990,8 @@
       
       // Continue to next step after short delay
       setTimeout(() => {
-        this.showThankYou();
+        console.log('Ad clicked, checking for next action...');
+        this.continueFlow();
       }, 1000);
     }
 
@@ -1000,8 +1001,45 @@
     }
 
     skipAd() {
-      // Continue to thank you without tracking click
-      this.showThankYou();
+      console.log('Ad skipped, checking for next action...');
+      // Continue to next step in flow
+      this.continueFlow();
+    }
+
+    async continueFlow() {
+      try {
+        // Check with backend for next action
+        const response = await fetch(`${this.apiBase}/api/flow/next-action`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: this.sessionId,
+            siteCode: this.siteCode,
+            action: 'ad_completed' // Indicate we just completed an ad
+          })
+        });
+
+        const flowResult = await response.json();
+        console.log('Flow result:', flowResult);
+
+        if (flowResult.action === 'ad') {
+          // Show another ad
+          console.log('Showing next ad...');
+          this.showAd();
+        } else if (flowResult.action === 'complete') {
+          // Flow is complete
+          console.log('Flow complete, showing thank you');
+          this.showThankYou();
+        } else {
+          // Fallback to thank you
+          console.log('Unknown action, showing thank you');
+          this.showThankYou();
+        }
+      } catch (error) {
+        console.error('Error continuing flow:', error);
+        // Fallback to thank you page
+        this.showThankYou();
+      }
     }
 
     getUserState() {
