@@ -722,9 +722,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const uniqueQuestions = new Set(responses.map((r: any) => r.questionId)).size;
           console.log(`📊 INITIALIZING STATE: Found ${uniqueQuestions} answered questions from session`);
           
-          // Set the questions answered count and move to ads phase
+          // Count how many ads have been shown by checking campaign impressions
+          const impressions = await storage.getCampaignImpressionsBySession(sessionId);
+          const adsShown = impressions.length;
+          console.log(`📊 INITIALIZING STATE: Found ${adsShown} ads already shown`);
+          
+          // Set the questions answered count and ads shown count
           const initialState = flowController.getState();
           initialState.questionsAnswered = uniqueQuestions;
+          initialState.adsShown = adsShown;
           initialState.currentPhase = "ads"; // Move to ads phase since questions are complete
           flowController.setState(initialState);
           console.log('📊 STATE AFTER QUESTION COUNT FIX:', flowController.getState());

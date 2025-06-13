@@ -62,6 +62,7 @@ export interface IStorage {
 
   // Campaign Impressions
   createCampaignImpression(impression: InsertCampaignImpression): Promise<CampaignImpression>;
+  getCampaignImpressionsBySession(sessionId: string): Promise<CampaignImpression[]>;
 
   // Campaign Clicks
   createCampaignClick(click: InsertCampaignClick): Promise<CampaignClick>;
@@ -296,6 +297,10 @@ export class DatabaseStorage implements IStorage {
   async createCampaignImpression(impression: InsertCampaignImpression): Promise<CampaignImpression> {
     const [newImpression] = await db.insert(campaignImpressions).values(impression).returning();
     return newImpression;
+  }
+
+  async getCampaignImpressionsBySession(sessionId: string): Promise<CampaignImpression[]> {
+    return await db.select().from(campaignImpressions).where(eq(campaignImpressions.sessionId, sessionId));
   }
 
   // Campaign Conversions
