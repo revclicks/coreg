@@ -121,6 +121,8 @@
                     throw new Error('Missing session or site parameters');
                 }
                 
+                console.log('Initializing widget with:', { sessionId, siteCode });
+                
                 // Hide loading, show widget container
                 document.getElementById('loading').style.display = 'none';
                 
@@ -128,31 +130,53 @@
                 const script = document.createElement('script');
                 script.src = '/widget.js';
                 script.onload = function() {
-                    // Initialize the widget with session continuation
-                    const widget = new window.CoRegWidget();
+                    console.log('Widget script loaded');
                     
-                    // Configure the widget for session continuation
-                    widget.continueFromSession(sessionId, siteCode);
-                    widget.apiBase = window.location.origin;
-                    
-                    // Initialize the widget
-                    widget.init().then(() => {
-                        console.log('Widget initialized successfully');
-                        console.log('Questions loaded:', widget.questions.length);
-                        
-                        // Override the container to use our widget-container
-                        const widgetContainer = document.querySelector('.widget-container');
-                        widgetContainer.innerHTML = '';
-                        widget.container = widgetContainer;
-                        widget.container.style.display = 'block';
-                        
-                        // Skip email capture and go directly to questions
-                        console.log('Starting questions...');
-                        widget.showCurrentQuestion();
-                    }).catch(error => {
-                        console.error('Widget initialization error:', error);
+                    // Check if CoRegWidget is available
+                    if (!window.CoRegWidget) {
+                        console.error('CoRegWidget not found in window');
                         showError();
-                    });
+                        return;
+                    }
+                    
+                    try {
+                        // Initialize the widget with session continuation
+                        const widget = new window.CoRegWidget();
+                        console.log('Widget instance created');
+                        
+                        // Configure the widget for session continuation
+                        widget.continueFromSession(sessionId, siteCode);
+                        widget.apiBase = window.location.origin;
+                        console.log('Widget configured:', { sessionId: widget.sessionId, siteCode: widget.siteCode });
+                        
+                        // Initialize the widget
+                        widget.init().then(() => {
+                            console.log('Widget initialized successfully');
+                            console.log('Questions loaded:', widget.questions?.length || 0);
+                            
+                            // Override the container to use our widget-container
+                            const widgetContainer = document.querySelector('.widget-container');
+                            if (!widgetContainer) {
+                                console.error('Widget container not found');
+                                showError();
+                                return;
+                            }
+                            
+                            widgetContainer.innerHTML = '';
+                            widget.container = widgetContainer;
+                            widget.container.style.display = 'block';
+                            
+                            // Skip email capture and go directly to questions
+                            console.log('Starting questions...');
+                            widget.showCurrentQuestion();
+                        }).catch(error => {
+                            console.error('Widget initialization error:', error);
+                            showError();
+                        });
+                    } catch (error) {
+                        console.error('Error creating widget instance:', error);
+                        showError();
+                    }
                 };
                 script.onerror = function() {
                     console.error('Failed to load widget script');

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Widget Test</h1>
+        <div id="widget-container" style="min-height: 400px; border: 1px dashed #ccc; padding: 20px;">
+            <p>Loading widget...</p>
+        </div>
+    </div>
+
+    <script src="/widget.js"></script>
+    <script>
+        console.log('Test page loaded');
+        console.log('CoRegWidget available:', !!window.CoRegWidget);
+        
+        if (window.CoRegWidget) {
+            try {
+                const widget = new window.CoRegWidget();
+                console.log('Widget created:', widget);
+                
+                widget.sessionId = 'test-session-123';
+                widget.siteCode = 'L-2a1xhXBi';
+                widget.apiBase = window.location.origin;
+                
+                const container = document.getElementById('widget-container');
+                container.innerHTML = '';
+                widget.container = container;
+                
+                widget.init().then(() => {
+                    console.log('Widget initialized, questions:', widget.questions?.length || 0);
+                    if (widget.questions && widget.questions.length > 0) {
+                        widget.showCurrentQuestion();
+                    } else {
+                        container.innerHTML = '<p style="color: red;">No questions loaded</p>';
+                    }
+                }).catch(error => {
+                    console.error('Widget init failed:', error);
+                    container.innerHTML = '<p style="color: red;">Widget initialization failed: ' + error.message + '</p>';
+                });
+            } catch (error) {
+                console.error('Widget creation failed:', error);
+                document.getElementById('widget-container').innerHTML = '<p style="color: red;">Widget creation failed: ' + error.message + '</p>';
+            }
+        } else {
+            document.getElementById('widget-container').innerHTML = '<p style="color: red;">CoRegWidget not found</p>';
+        }
+    </script>
+</body>
+</html>
