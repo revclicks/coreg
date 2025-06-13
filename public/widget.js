@@ -300,11 +300,35 @@
             ×
           </button>
         `;
+        
+        // Add event listeners for answer buttons
+        this.attachEventListeners();
       } catch (error) {
         console.error('Error showing question:', error);
         // Fall back to showing ad if question display fails
         this.showAd();
       }
+    }
+
+    attachEventListeners() {
+      // Handle answer button clicks
+      const answerButtons = this.container.querySelectorAll('.widget-answer-btn');
+      answerButtons.forEach(button => {
+        button.addEventListener('click', (e) => {
+          const answer = e.target.getAttribute('data-answer');
+          console.log('Answer button clicked:', answer);
+          this.selectAnswer(answer);
+        });
+      });
+
+      // Handle continue button clicks
+      const continueButtons = this.container.querySelectorAll('.widget-continue-btn');
+      continueButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          console.log('Continue button clicked');
+          this.nextQuestion();
+        });
+      });
     }
 
     renderAnswerOptions(question) {
@@ -314,7 +338,7 @@
         case 'multiple_choice':
         case 'radio':
           return options.map((option, index) => `
-            <button type="button" onclick="coregWidget.selectAnswer('${option}')" 
+            <button type="button" data-answer="${option}" class="widget-answer-btn"
                     style="display: block; width: 100%; margin-bottom: 15px; padding: 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 600; transition: all 0.2s; ${
                       option.toLowerCase() === 'yes' 
                         ? 'background: #10b981; color: white;' 
@@ -330,7 +354,7 @@
                    style="width: 100%; padding: 15px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 16px; outline: none; transition: border-color 0.2s;" 
                    onfocus="this.style.borderColor='#3b82f6';" 
                    onblur="this.style.borderColor='#e5e7eb';">
-            <button onclick="coregWidget.nextQuestion()" 
+            <button class="widget-continue-btn"
                     style="margin-top: 20px; width: 100%; padding: 15px; background: #3b82f6; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
               Continue
             </button>
