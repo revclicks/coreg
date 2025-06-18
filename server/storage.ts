@@ -1,10 +1,12 @@
 import { 
-  questions, campaigns, sites, userSessions, questionResponses, 
+  users, questions, campaigns, sites, userSessions, questionResponses, 
   campaignClicks, campaignImpressions, campaignConversions,
   audienceSegments, userSegmentMemberships, segmentPerformance,
   abTestExperiments, abTestVariants, abTestResults, questionStats,
   rtbBidRequests, rtbBids, rtbAuctions, rtbCampaignPerformance,
-  userInteractions,
+  userInteractions, revenueSettings, revenueTransactions, userPayouts,
+  adminRevenueSummary,
+  type User, type InsertUser,
   type Question, type InsertQuestion,
   type Campaign, type InsertCampaign,
   type Site, type InsertSite,
@@ -23,12 +25,33 @@ import {
   type RtbBidRequest, type InsertRtbBidRequest,
   type RtbBid, type InsertRtbBid,
   type RtbAuction, type InsertRtbAuction,
-  type RtbCampaignPerformance, type InsertRtbCampaignPerformance
+  type RtbCampaignPerformance, type InsertRtbCampaignPerformance,
+  type RevenueSettings, type InsertRevenueSettings,
+  type RevenueTransaction, type InsertRevenueTransaction,
+  type UserPayout, type InsertUserPayout,
+  type AdminRevenueSummary, type InsertAdminRevenueSummary
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
 
 export interface IStorage {
+  // Users
+  createUser(user: InsertUser): Promise<User>;
+  getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  updateUser(id: string, updates: Partial<InsertUser>): Promise<User>;
+  deleteUser(id: string): Promise<void>;
+
+  // Revenue operations
+  getRevenueSettings(): Promise<RevenueSettings | undefined>;
+  updateRevenueSettings(settings: InsertRevenueSettings): Promise<RevenueSettings>;
+  createRevenueTransaction(transaction: InsertRevenueTransaction): Promise<RevenueTransaction>;
+  getRevenueTransactions(userId?: string): Promise<RevenueTransaction[]>;
+  createUserPayout(payout: InsertUserPayout): Promise<UserPayout>;
+  getUserPayouts(userId: string): Promise<UserPayout[]>;
+  getAdminRevenueSummary(): Promise<AdminRevenueSummary[]>;
+  updateAdminRevenueSummary(summary: InsertAdminRevenueSummary): Promise<AdminRevenueSummary>;
+
   // Questions
   getQuestions(): Promise<Question[]>;
   getQuestion(id: number): Promise<Question | undefined>;
@@ -130,6 +153,83 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // User operations
+  async createUser(user: InsertUser): Promise<User> {
+    const [result] = await db.insert(users).values(user).returning();
+    return result;
+  }
+
+  async getUser(id: string): Promise<User | undefined> {
+    const [result] = await db.select().from(users).where(eq(users.id, id));
+    return result;
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [result] = await db.select().from(users).where(eq(users.email, email));
+    return result;
+  }
+
+  async updateUser(id: string, updates: Partial<InsertUser>): Promise<User> {
+    const [result] = await db.update(users)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  }
+
+  // Revenue operations
+  async getRevenueSettings(): Promise<RevenueSettings | undefined> {
+    const [result] = await db.select().from(revenueSettings).limit(1);
+    return result;
+  }
+
+  async updateRevenueSettings(settings: InsertRevenueSettings): Promise<RevenueSettings> {
+    const existing = await this.getRevenueSettings();
+    if (existing) {
+      const [result] = await db.update(revenueSettings)
+        .set({ ...settings, updatedAt: new Date() })
+        .where(eq(revenueSettings.id, existing.id))
+        .returning();
+      return result;
+    } else {
+      const [result] = await db.insert(revenueSettings).values(settings).returning();
+      return result;
+    }
+  }
+
+  async createRevenueTransaction(transaction: InsertRevenueTransaction): Promise<RevenueTransaction> {
+    const [result] = await db.insert(revenueTransactions).values(transaction).returning();
+    return result;
+  }
+
+  async getRevenueTransactions(userId?: string): Promise<RevenueTransaction[]> {
+    if (userId) {
+      return await db.select().from(revenueTransactions).where(eq(revenueTransactions.userId, userId));
+    }
+    return await db.select().from(revenueTransactions);
+  }
+
+  async createUserPayout(payout: InsertUserPayout): Promise<UserPayout> {
+    const [result] = await db.insert(userPayouts).values(payout).returning();
+    return result;
+  }
+
+  async getUserPayouts(userId: string): Promise<UserPayout[]> {
+    return await db.select().from(userPayouts).where(eq(userPayouts.userId, userId));
+  }
+
+  async getAdminRevenueSummary(): Promise<AdminRevenueSummary[]> {
+    return await db.select().from(adminRevenueSummary).orderBy(desc(adminRevenueSummary.date));
+  }
+
+  async updateAdminRevenueSummary(summary: InsertAdminRevenueSummary): Promise<AdminRevenueSummary> {
+    const [result] = await db.insert(adminRevenueSummary).values(summary).returning();
+    return result;
+  }
   // Questions
   async getQuestions(): Promise<Question[]> {
     return await db.select().from(questions).orderBy(questions.priority, questions.id);
