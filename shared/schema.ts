@@ -434,6 +434,7 @@ export const userBehaviorPatterns = pgTable("user_behavior_patterns", {
   lastUpdated: timestamp("last_updated").defaultNow(),
 });
 
+// RTB Campaign Performance table
 export const rtbCampaignPerformance = pgTable("rtb_campaign_performance", {
   id: serial("id").primaryKey(),
   campaignId: integer("campaign_id").notNull().references(() => campaigns.id),
@@ -799,7 +800,40 @@ export const insertFlowAbTestSessionSchema = createInsertSchema(flowAbTestSessio
   createdAt: true,
 });
 
+// Revenue sharing insert schemas
+export const insertRevenueSettingsSchema = createInsertSchema(revenueSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertRevenueTransactionSchema = createInsertSchema(revenueTransactions).omit({
+  id: true,
+  timestamp: true,
+});
+
+export const insertUserPayoutSchema = createInsertSchema(userPayouts).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertAdminRevenueSummarySchema = createInsertSchema(adminRevenueSummary).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// RTB Campaign Performance schema already declared below
+
 // Types
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
 export type LoginRequest = z.infer<typeof loginSchema>;
@@ -816,6 +850,18 @@ export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
 
 export type Site = typeof sites.$inferSelect;
 export type InsertSite = z.infer<typeof insertSiteSchema>;
+
+export type RevenueSettings = typeof revenueSettings.$inferSelect;
+export type InsertRevenueSettings = z.infer<typeof insertRevenueSettingsSchema>;
+
+export type RevenueTransaction = typeof revenueTransactions.$inferSelect;
+export type InsertRevenueTransaction = z.infer<typeof insertRevenueTransactionSchema>;
+
+export type UserPayout = typeof userPayouts.$inferSelect;
+export type InsertUserPayout = z.infer<typeof insertUserPayoutSchema>;
+
+export type AdminRevenueSummary = typeof adminRevenueSummary.$inferSelect;
+export type InsertAdminRevenueSummary = z.infer<typeof insertAdminRevenueSummarySchema>;
 
 export type UserSession = typeof userSessions.$inferSelect;
 export type InsertUserSession = z.infer<typeof insertUserSessionSchema>;
@@ -918,11 +964,6 @@ export const insertRtbBidSchema = createInsertSchema(rtbBids).omit({
 });
 
 export const insertRtbAuctionSchema = createInsertSchema(rtbAuctions).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertRtbCampaignPerformanceSchema = createInsertSchema(rtbCampaignPerformance).omit({
   id: true,
   createdAt: true,
 });
