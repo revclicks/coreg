@@ -26,8 +26,8 @@ import { hashPassword, verifyPassword, authenticateUser, AuthenticatedRequest } 
 // Authentication middleware
 
 async function requireMasterAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  if (!req.user || req.user.role !== "master_admin") {
-    return res.status(403).json({ error: "Master admin access required" });
+  if (!req.user || req.user.role !== "admin") {
+    return res.status(403).json({ error: "Admin access required" });
   }
   next();
 }
@@ -2524,9 +2524,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { adminSharePercentage, publisherSharePercentage } = req.body;
       
       const settings = await storage.updateRevenueSettings({
-        adminSharePercentage,
-        publisherSharePercentage,
-        minimumPayoutThreshold: req.body.minimumPayoutThreshold || "50.00"
+        adminRevSharePercent: adminSharePercentage.toString(),
+        publisherRevSharePercent: publisherSharePercentage.toString(),
+        minimumPayout: req.body.minimumPayoutThreshold || "50.00"
       });
       
       res.json(settings);

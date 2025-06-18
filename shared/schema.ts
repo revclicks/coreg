@@ -5,7 +5,7 @@ import { z } from "zod";
 
 // Users table - unified for all user types
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+  id: varchar("id", { length: 128 }).primaryKey(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   firstName: varchar("first_name", { length: 100 }),
