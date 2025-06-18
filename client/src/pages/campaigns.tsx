@@ -35,7 +35,8 @@ export default function Campaigns() {
       if (dateRange.to) params.append("endDate", dateRange.to.toISOString());
       
       const response = await fetch(`/api/campaigns/stats?${params}`);
-      return response.json();
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
     }
   });
 
@@ -231,7 +232,7 @@ export default function Campaigns() {
                 <Eye className="h-5 w-5 text-blue-500" />
                 <div>
                   <p className="text-sm font-medium text-slate-600">Total Impressions</p>
-                  <p className="text-2xl font-bold">{(campaignStats || []).reduce((sum: number, stat: any) => sum + (stat.impressions || 0), 0).toLocaleString()}</p>
+                  <p className="text-2xl font-bold">{campaignStats?.reduce((sum: number, stat: any) => sum + (stat.impressions || 0), 0).toLocaleString() || '0'}</p>
                 </div>
               </div>
             </CardContent>
@@ -242,7 +243,7 @@ export default function Campaigns() {
                 <MousePointer className="h-5 w-5 text-green-500" />
                 <div>
                   <p className="text-sm font-medium text-slate-600">Total Clicks</p>
-                  <p className="text-2xl font-bold">{(campaignStats || []).reduce((sum: number, stat: any) => sum + (stat.clicks || 0), 0).toLocaleString()}</p>
+                  <p className="text-2xl font-bold">{campaignStats?.reduce((sum: number, stat: any) => sum + (stat.clicks || 0), 0).toLocaleString() || '0'}</p>
                 </div>
               </div>
             </CardContent>
@@ -253,7 +254,7 @@ export default function Campaigns() {
                 <Target className="h-5 w-5 text-purple-500" />
                 <div>
                   <p className="text-sm font-medium text-slate-600">Total Conversions</p>
-                  <p className="text-2xl font-bold">{(campaignStats || []).reduce((sum: number, stat: any) => sum + (stat.conversions || 0), 0).toLocaleString()}</p>
+                  <p className="text-2xl font-bold">{campaignStats?.reduce((sum: number, stat: any) => sum + (stat.conversions || 0), 0).toLocaleString() || '0'}</p>
                 </div>
               </div>
             </CardContent>
