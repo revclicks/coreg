@@ -2,6 +2,12 @@ import bcrypt from "bcryptjs";
 import { Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 
+declare module 'express-session' {
+  interface SessionData {
+    userId?: string;
+  }
+}
+
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: string;

@@ -9,7 +9,7 @@ import {
   questions, campaigns, sites, userSessions, questionResponses, campaignImpressions, campaignClicks, campaignConversions,
   audienceSegments, userSegmentMemberships, questionImpressions, leads,
   adminUsers, adminSessions, loginSchema, registerSchema,
-  type AdminUser, type AdminSession
+  type AdminUser, type AdminSession, type User
 } from "@shared/schema";
 import { eq, desc, gte, lte, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -21,11 +21,9 @@ import cookieParser from "cookie-parser";
 import { rtbEngine } from "./rtb-engine";
 import { personalizationEngine } from "./personalization-engine";
 import { leadWebhookService } from "./lead-webhook-service";
+import { hashPassword, verifyPassword, authenticateUser, AuthenticatedRequest } from "./auth";
 
 // Authentication middleware
-interface AuthenticatedRequest extends Request {
-  user?: AdminUser;
-}
 
 async function requireMasterAdmin(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   if (!req.user || req.user.role !== "master_admin") {
@@ -2376,6 +2374,200 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching all leads:", error);
       res.status(500).json({ error: "Failed to fetch leads" });
+    }
+  });
+
+  // User Authentication Routes for Role-Based System
+  app.post("/api/user/register", async (req, res) => {
+    try {
+      const userData = registerSchema.parse(req.body);
+      
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(userData.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+
+      // Hash password and create user
+      const hashedPassword = await hashPassword(userData.password);
+      const userId = nanoid();
+      
+      const newUser = await storage.createUser({
+        id: userId,
+        email: userData.email,
+        password: hashedPassword,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        company: userData.company || null,
+        role: userData.role,
+      });
+
+      res.status(201).json({ 
+        message: "Registration successful",
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          role: newUser.role,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          company: newUser.company
+        }
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  app.post("/api/user/login", async (req, res) => {
+    try {
+      const { email, password } = loginSchema.parse(req.body);
+      
+      // Find user by email
+      const user = await storage.getUserByEmail(email);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Verify password
+      const isValidPassword = await verifyPassword(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Set session
+      req.session.userId = user.id;
+
+      res.json({
+        message: "Login successful",
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          company: user.company
+        }
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Validation error", 
+          errors: error.errors 
+        });
+      }
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  app.get("/api/user/profile", authenticateUser, async (req: AuthenticatedRequest, res) => {
+    try {
+      const user = await storage.getUser(req.user!.id);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        company: user.company,
+        createdAt: user.createdAt
+      });
+    } catch (error) {
+      console.error("Get user error:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  app.post("/api/user/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.clearCookie("connect.sid");
+      res.json({ message: "Logout successful" });
+    });
+  });
+
+  // Revenue tracking routes
+  app.get("/api/revenue/settings", authenticateUser, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (req.user!.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const settings = await storage.getRevenueSettings();
+      res.json(settings || { adminSharePercentage: 30, publisherSharePercentage: 70 });
+    } catch (error) {
+      console.error("Get revenue settings error:", error);
+      res.status(500).json({ message: "Failed to fetch revenue settings" });
+    }
+  });
+
+  app.put("/api/revenue/settings", authenticateUser, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (req.user!.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const { adminSharePercentage, publisherSharePercentage } = req.body;
+      
+      const settings = await storage.updateRevenueSettings({
+        adminSharePercentage,
+        publisherSharePercentage,
+        minimumPayoutThreshold: req.body.minimumPayoutThreshold || "50.00"
+      });
+      
+      res.json(settings);
+    } catch (error) {
+      console.error("Update revenue settings error:", error);
+      res.status(500).json({ message: "Failed to update revenue settings" });
+    }
+  });
+
+  app.get("/api/revenue/transactions", authenticateUser, async (req: AuthenticatedRequest, res) => {
+    try {
+      const userId = req.user!.role === "admin" ? undefined : req.user!.id;
+      const transactions = await storage.getRevenueTransactions(userId);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Get revenue transactions error:", error);
+      res.status(500).json({ message: "Failed to fetch revenue transactions" });
+    }
+  });
+
+  app.get("/api/revenue/payouts", authenticateUser, async (req: AuthenticatedRequest, res) => {
+    try {
+      const payouts = await storage.getUserPayouts(req.user!.id);
+      res.json(payouts);
+    } catch (error) {
+      console.error("Get payouts error:", error);
+      res.status(500).json({ message: "Failed to fetch payouts" });
+    }
+  });
+
+  app.get("/api/admin/revenue-summary", authenticateUser, async (req: AuthenticatedRequest, res) => {
+    try {
+      if (req.user!.role !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+      
+      const summary = await storage.getAdminRevenueSummary();
+      res.json(summary);
+    } catch (error) {
+      console.error("Get admin revenue summary error:", error);
+      res.status(500).json({ message: "Failed to fetch admin revenue summary" });
     }
   });
 
