@@ -828,7 +828,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
 });
 
-// RTB Campaign Performance schema already declared below
+// RTB Campaign Performance schema declared below
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -964,6 +964,11 @@ export const insertRtbBidSchema = createInsertSchema(rtbBids).omit({
 });
 
 export const insertRtbAuctionSchema = createInsertSchema(rtbAuctions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRtbCampaignPerformanceSchema = createInsertSchema(rtbCampaignPerformance).omit({
   id: true,
   createdAt: true,
 });
