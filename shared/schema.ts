@@ -3,7 +3,22 @@ import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Admin Users table
+// Users table - unified for all user types
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  firstName: varchar("first_name", { length: 100 }),
+  lastName: varchar("last_name", { length: 100 }),
+  company: varchar("company", { length: 200 }),
+  role: text("role").notNull().default("publisher"), // admin, advertiser, publisher
+  active: boolean("active").notNull().default(true),
+  lastLoginAt: timestamp("last_login_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Legacy admin users table (keeping for backward compatibility)
 export const adminUsers = pgTable("admin_users", {
   id: serial("id").primaryKey(),
   email: varchar("email", { length: 255 }).notNull().unique(),
@@ -41,6 +56,7 @@ export const questions = pgTable("questions", {
 // Campaigns table
 export const campaigns = pgTable("campaigns", {
   id: serial("id").primaryKey(),
+  advertiserId: integer("advertiser_id").notNull().references(() => users.id),
   name: text("name").notNull(),
   vertical: text("vertical").notNull(),
   campaignType: text("campaign_type").notNull().default("standard"), // standard, lead
@@ -70,6 +86,7 @@ export const campaigns = pgTable("campaigns", {
 // Sites table
 export const sites = pgTable("sites", {
   id: serial("id").primaryKey(),
+  publisherId: integer("publisher_id").notNull().references(() => users.id),
   name: text("name").notNull(),
   domain: text("domain").notNull(),
   vertical: text("vertical").notNull(),
@@ -316,7 +333,62 @@ export const rtbAuctions = pgTable("rtb_auctions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// RTB Campaign Performance table
+// RTB Campaign Performance table - removed duplicate
+
+// Revenue Sharing Settings
+export const revenueSettings = pgTable("revenue_settings", {
+  id: serial("id").primaryKey(),
+  adminRevSharePercent: decimal("admin_revshare_percent", { precision: 5, scale: 2 }).notNull().default("20.00"),
+  publisherRevSharePercent: decimal("publisher_revshare_percent", { precision: 5, scale: 2 }).notNull().default("80.00"),
+  minimumPayout: decimal("minimum_payout", { precision: 10, scale: 2 }).notNull().default("50.00"),
+  payoutFrequency: text("payout_frequency").notNull().default("monthly"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Revenue Transactions
+export const revenueTransactions = pgTable("revenue_transactions", {
+  id: serial("id").primaryKey(),
+  campaignId: integer("campaign_id").notNull().references(() => campaigns.id),
+  publisherId: integer("publisher_id").notNull().references(() => users.id),
+  advertiserId: integer("advertiser_id").notNull().references(() => users.id),
+  siteId: integer("site_id").notNull().references(() => sites.id),
+  sessionId: text("session_id").notNull(),
+  totalRevenue: decimal("total_revenue", { precision: 10, scale: 2 }).notNull(),
+  adminShare: decimal("admin_share", { precision: 10, scale: 2 }).notNull(),
+  publisherShare: decimal("publisher_share", { precision: 10, scale: 2 }).notNull(),
+  transactionType: text("transaction_type").notNull(),
+  clickId: text("click_id"),
+  conversionId: text("conversion_id"),
+  leadId: integer("lead_id").references(() => leads.id),
+  timestamp: timestamp("timestamp").defaultNow(),
+});
+
+// User Payouts
+export const userPayouts = pgTable("user_payouts", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  period: text("period").notNull(),
+  status: text("status").notNull().default("pending"),
+  paymentMethod: text("payment_method"),
+  paymentDetails: jsonb("payment_details"),
+  paidAt: timestamp("paid_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Admin Revenue Summary
+export const adminRevenueSummary = pgTable("admin_revenue_summary", {
+  id: serial("id").primaryKey(),
+  period: text("period").notNull(),
+  totalRevenue: decimal("total_revenue", { precision: 12, scale: 2 }).notNull(),
+  adminRevenue: decimal("admin_revenue", { precision: 12, scale: 2 }).notNull(),
+  publisherPayouts: decimal("publisher_payouts", { precision: 12, scale: 2 }).notNull(),
+  advertiserSpend: decimal("advertiser_spend", { precision: 12, scale: 2 }).notNull(),
+  profit: decimal("profit", { precision: 12, scale: 2 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // User Interaction Tracking table
 export const userInteractions = pgTable("user_interactions", {
   id: serial("id").primaryKey(),
