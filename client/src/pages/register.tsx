@@ -25,7 +25,7 @@ const registerSchema = z.object({
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
-export default function Register() {
+export function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
@@ -43,7 +43,7 @@ export default function Register() {
 
   const registerMutation = useMutation({
     mutationFn: async (data: RegisterFormData) => {
-      return await apiRequest("/api/auth/register", {
+      return await apiRequest("/api/user/register", {
         method: "POST",
         body: JSON.stringify(data)
       });

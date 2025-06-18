@@ -32,9 +32,9 @@ export async function authenticateUser(req: AuthenticatedRequest, res: Response,
     }
 
     req.user = {
-      id: user.id,
+      id: user.id.toString(),
       email: user.email,
-      role: user.role,
+      role: user.role as "admin" | "advertiser" | "publisher",
       firstName: user.firstName || undefined,
       lastName: user.lastName || undefined,
       company: user.company || undefined

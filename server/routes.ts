@@ -2436,13 +2436,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verify password
-      const isValidPassword = await verifyPassword(password, user.password);
+      const isValidPassword = await verifyPassword(password, user.passwordHash);
       if (!isValidPassword) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
       // Set session
-      req.session.userId = user.id;
+      req.session.userId = user.id.toString();
 
       res.json({
         message: "Login successful",
