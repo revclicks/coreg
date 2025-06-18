@@ -223,7 +223,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAdminRevenueSummary(): Promise<AdminRevenueSummary[]> {
-    return await db.select().from(adminRevenueSummary).orderBy(desc(adminRevenueSummary.date));
+    return await db.select().from(adminRevenueSummary).orderBy(desc(adminRevenueSummary.createdAt));
   }
 
   async updateAdminRevenueSummary(summary: InsertAdminRevenueSummary): Promise<AdminRevenueSummary> {
