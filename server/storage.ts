@@ -208,7 +208,7 @@ export class DatabaseStorage implements IStorage {
 
   async getRevenueTransactions(userId?: string): Promise<RevenueTransaction[]> {
     if (userId) {
-      return await db.select().from(revenueTransactions).where(eq(revenueTransactions.userId, userId));
+      return await db.select().from(revenueTransactions).where(eq(revenueTransactions.publisherId, userId));
     }
     return await db.select().from(revenueTransactions);
   }

@@ -350,8 +350,8 @@ export const revenueSettings = pgTable("revenue_settings", {
 export const revenueTransactions = pgTable("revenue_transactions", {
   id: serial("id").primaryKey(),
   campaignId: integer("campaign_id").notNull().references(() => campaigns.id),
-  publisherId: integer("publisher_id").notNull().references(() => users.id),
-  advertiserId: integer("advertiser_id").notNull().references(() => users.id),
+  publisherId: varchar("publisher_id", { length: 128 }).notNull().references(() => users.id),
+  advertiserId: varchar("advertiser_id", { length: 128 }).notNull().references(() => users.id),
   siteId: integer("site_id").notNull().references(() => sites.id),
   sessionId: text("session_id").notNull(),
   totalRevenue: decimal("total_revenue", { precision: 10, scale: 2 }).notNull(),
@@ -367,7 +367,7 @@ export const revenueTransactions = pgTable("revenue_transactions", {
 // User Payouts
 export const userPayouts = pgTable("user_payouts", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  userId: varchar("user_id", { length: 128 }).notNull().references(() => users.id),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   period: text("period").notNull(),
   status: text("status").notNull().default("pending"),
