@@ -95,6 +95,7 @@ export const sites = pgTable("sites", {
   status: text("status").notNull().default("active"),
   widgetConfig: jsonb("widget_config"),
   domain: text("domain").notNull(),
+  siteCode: text("site_code").unique(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

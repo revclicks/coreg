@@ -754,12 +754,16 @@
         
         // Start questions after collecting personal info
         console.log('Personal info saved, starting questions...');
-        this.showCurrentQuestion();
+        console.log('Current question index:', this.currentQuestionIndex);
+        console.log('Questions available:', this.questions ? this.questions.length : 'No questions loaded');
+        await this.showCurrentQuestion();
       } catch (error) {
         console.error('Error saving personal information:', error);
         // Still start questions even if save fails
         console.log('Error saving personal info, but continuing to questions...');
-        this.showCurrentQuestion();
+        console.log('Current question index:', this.currentQuestionIndex);
+        console.log('Questions available:', this.questions ? this.questions.length : 'No questions loaded');
+        await this.showCurrentQuestion();
       }
     }
 
