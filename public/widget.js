@@ -815,13 +815,8 @@
       // Force a complete re-render to avoid cache issues
       console.log('🎨 Rendering ad with new layout v2.0');
       this.container.innerHTML = `
-        <!-- Blue Header -->
-        <div style="position: absolute; top: 0; left: 0; width: 100%; background: #1e3a8a; color: white; text-align: center; padding: 20px 0; font-size: 18px; font-weight: 600;">
-          Thank You for Your Response!
-        </div>
-        
         <!-- Ad Card -->
-        <div style="background: white; border-radius: 12px; padding: 40px; max-width: 500px; width: 90%; margin: 0 auto; box-shadow: 0 20px 40px rgba(0,0,0,0.1); text-align: center;">
+        <div style="background: white; border-radius: 12px; padding: 40px; max-width: 500px; width: 90%; margin: 40px auto; box-shadow: 0 20px 40px rgba(0,0,0,0.1); text-align: center;">
           ${campaign.imageUrl ? `
             <img src="${campaign.imageUrl}" alt="${campaign.name}" 
                  style="width: 100%; max-width: 300px; height: auto; border-radius: 12px; margin-bottom: 20px;">
