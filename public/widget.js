@@ -812,6 +812,8 @@
     renderAd(campaign) {
       this.currentCampaign = campaign;
       
+      // Force a complete re-render to avoid cache issues
+      console.log('🎨 Rendering ad with new layout v2.0');
       this.container.innerHTML = `
         <!-- Blue Header -->
         <div style="position: absolute; top: 0; left: 0; width: 100%; background: #1e3a8a; color: white; text-align: center; padding: 20px 0; font-size: 18px; font-weight: 600;">
@@ -819,7 +821,7 @@
         </div>
         
         <!-- Ad Card -->
-        <div style="background: white; border-radius: 12px; padding: 40px; max-width: 500px; width: 90%; margin: 0 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); text-align: center;">
+        <div style="background: white; border-radius: 12px; padding: 40px; max-width: 500px; width: 90%; margin: 0 auto; box-shadow: 0 20px 40px rgba(0,0,0,0.1); text-align: center;">
           ${campaign.imageUrl ? `
             <img src="${campaign.imageUrl}" alt="${campaign.name}" 
                  style="width: 100%; max-width: 300px; height: auto; border-radius: 12px; margin-bottom: 20px;">
@@ -835,7 +837,7 @@
           
           <div style="margin-bottom: 20px;">
             <button class="widget-ad-click-btn" data-url="${campaign.url}"
-                    style="display: block; width: 100%; max-width: 300px; margin: 0 auto; padding: 15px 30px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; transition: background 0.2s;">
+                    style="display: block; width: 100%; max-width: 300px; margin: 0 auto; padding: 15px 30px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);">
               Learn More
             </button>
           </div>
