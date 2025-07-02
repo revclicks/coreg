@@ -921,6 +921,63 @@ export class DatabaseStorage implements IStorage {
       totalRevenue: parseFloat(totalRevenue[0]?.total || '0')
     };
   }
+
+  // Form Submission Operations
+  async createFormSubmission(submission: InsertFormSubmission): Promise<FormSubmission> {
+    const [result] = await db.insert(formSubmissions).values(submission).returning();
+    return result;
+  }
+
+  async getFormSubmissions(filters?: {
+    siteId?: number;
+    searchTerm?: string;
+    dateFilter?: string;
+  }): Promise<FormSubmission[]> {
+    let query = db.select().from(formSubmissions);
+
+    if (filters?.siteId) {
+      query = query.where(eq(formSubmissions.siteId, filters.siteId));
+    }
+
+    // Apply date filter
+    if (filters?.dateFilter) {
+      const now = new Date();
+      let startDate: Date;
+      
+      switch (filters.dateFilter) {
+        case 'today':
+          startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          break;
+        case 'week':
+          startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          break;
+        case 'month':
+          startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+          break;
+        default:
+          startDate = new Date(0); // All time
+      }
+      
+      if (filters.dateFilter !== 'all') {
+        query = query.where(gte(formSubmissions.submittedAt, startDate));
+      }
+    }
+
+    const results = await query.orderBy(desc(formSubmissions.submittedAt));
+
+    // Apply search filter in memory (for better performance with complex search)
+    if (filters?.searchTerm) {
+      const searchTerm = filters.searchTerm.toLowerCase();
+      return results.filter(submission => 
+        submission.email?.toLowerCase().includes(searchTerm) ||
+        submission.firstName?.toLowerCase().includes(searchTerm) ||
+        submission.lastName?.toLowerCase().includes(searchTerm) ||
+        submission.siteName?.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    return results;
+  }
 }
 
 export const storage = new DatabaseStorage();
