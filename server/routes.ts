@@ -2571,6 +2571,223 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Widget code generation endpoint
+  app.post("/api/widget/generate-code", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { siteId, theme, position, trigger, questionsPerFlow, maxAds, flowType } = req.body;
+      
+      if (!siteId) {
+        return res.status(400).json({ error: "Site ID is required" });
+      }
+
+      // Verify site exists and user has access
+      const site = await storage.getSite(parseInt(siteId));
+      if (!site) {
+        return res.status(404).json({ error: "Site not found" });
+      }
+
+      // Generate widget configuration
+      const widgetConfig = {
+        siteCode: siteId,
+        theme: theme || "light",
+        position: position || "bottom-right", 
+        trigger: trigger || "button",
+        questionsPerFlow: questionsPerFlow || 3,
+        maxAds: maxAds || 2,
+        flowType: flowType || "progressive",
+        apiUrl: `${req.protocol}://${req.get('host')}/api`
+      };
+
+      // Update site widget config
+      await storage.updateSite(parseInt(siteId), { 
+        widget_config: widgetConfig 
+      });
+
+      res.json({
+        success: true,
+        config: widgetConfig,
+        embedCode: generateEmbedCode(widgetConfig),
+        backendCode: generateBackendIntegrationCode(widgetConfig)
+      });
+    } catch (error) {
+      console.error("Widget generation error:", error);
+      res.status(500).json({ error: "Failed to generate widget code" });
+    }
+  });
+
+  // Form data collection endpoint (public - no auth required)
+  app.post("/api/form-data", async (req, res) => {
+    try {
+      const { siteCode, userData, timestamp } = req.body;
+      
+      if (!siteCode || !userData) {
+        return res.status(400).json({ error: "Site code and user data are required" });
+      }
+
+      // Get site info
+      const site = await storage.getSiteByCode(siteCode.toString());
+      if (!site) {
+        return res.status(404).json({ error: "Site not found" });
+      }
+
+      // Create form submission record
+      const submissionData = {
+        siteId: site.id,
+        siteName: site.name,
+        email: userData.email || null,
+        firstName: userData.firstName || null,
+        lastName: userData.lastName || null,
+        phone: userData.phone || null,
+        dateOfBirth: userData.dateOfBirth || null,
+        zipCode: userData.zipCode || null,
+        gender: userData.gender || null,
+        userData: userData,
+        submittedAt: timestamp ? new Date(timestamp) : new Date(),
+        ipAddress: req.ip || null,
+        userAgent: req.get('User-Agent') || null,
+        sessionId: userData.sessionId || null
+      };
+
+      // Store in database (we'll need to create this table)
+      const submission = await storage.createFormSubmission(submissionData);
+
+      res.json({
+        success: true,
+        submissionId: submission.id,
+        message: "Form data received successfully"
+      });
+    } catch (error) {
+      console.error("Form data collection error:", error);
+      res.status(500).json({ error: "Failed to store form data" });
+    }
+  });
+
+  // Form data management endpoints (admin only)
+  app.get("/api/form-data", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { siteId, searchTerm, dateFilter } = req.query;
+      
+      const submissions = await storage.getFormSubmissions({
+        siteId: siteId ? parseInt(siteId as string) : undefined,
+        searchTerm: searchTerm as string,
+        dateFilter: dateFilter as string
+      });
+
+      res.json(submissions);
+    } catch (error) {
+      console.error("Form data fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch form data" });
+    }
+  });
+
+  // Form data export endpoint
+  app.post("/api/form-data/export", authenticateToken, async (req: AuthenticatedRequest, res) => {
+    try {
+      const { siteId, searchTerm, dateFilter } = req.body;
+      
+      const submissions = await storage.getFormSubmissions({
+        siteId: siteId || undefined,
+        searchTerm: searchTerm || undefined,
+        dateFilter: dateFilter || undefined
+      });
+
+      // Generate CSV content
+      const csvHeaders = [
+        "Date", "Site", "Email", "First Name", "Last Name", 
+        "Phone", "Date of Birth", "Zip Code", "Gender", "IP Address", "Session ID"
+      ];
+      
+      const csvRows = submissions.map((sub: any) => [
+        sub.submittedAt.toISOString(),
+        sub.siteName,
+        sub.email || "",
+        sub.firstName || "",
+        sub.lastName || "",
+        sub.phone || "",
+        sub.dateOfBirth || "",
+        sub.zipCode || "",
+        sub.gender || "",
+        sub.ipAddress || "",
+        sub.sessionId || ""
+      ]);
+
+      const csvContent = [
+        csvHeaders.join(","),
+        ...csvRows.map(row => row.map(field => `"${field}"`).join(","))
+      ].join("\n");
+
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=form-data-export.csv");
+      res.send(csvContent);
+    } catch (error) {
+      console.error("Form data export error:", error);
+      res.status(500).json({ error: "Failed to export form data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
+}
+
+// Helper functions for widget code generation
+function generateEmbedCode(config: any): string {
+  return `<!-- CoReg Marketing Widget -->
+<script type="text/javascript">
+  (function() {
+    var coregWidget = document.createElement('script');
+    coregWidget.type = 'text/javascript';
+    coregWidget.async = true;
+    coregWidget.src = '${config.apiUrl.replace('/api', '')}/widget.js';
+    coregWidget.onload = function() {
+      new CoRegWidget({
+        siteCode: '${config.siteCode}',
+        theme: '${config.theme}',
+        position: '${config.position}',
+        trigger: '${config.trigger}',
+        questionsPerFlow: ${config.questionsPerFlow},
+        maxAds: ${config.maxAds},
+        flowType: '${config.flowType}',
+        apiUrl: '${config.apiUrl}'
+      }).init();
+    };
+    var firstScript = document.getElementsByTagName('script')[0];
+    firstScript.parentNode.insertBefore(coregWidget, firstScript);
+  })();
+</script>
+<!-- End CoReg Marketing Widget -->`;
+}
+
+function generateBackendIntegrationCode(config: any): string {
+  return `// Backend Form Integration Example
+// Add this to your form submission handler
+
+const coregData = {
+  email: formData.email,
+  firstName: formData.firstName,
+  lastName: formData.lastName,
+  phone: formData.phone,
+  dateOfBirth: formData.dateOfBirth,
+  zipCode: formData.zipCode,
+  // Add other form fields as needed
+};
+
+// Send data to CoReg platform
+fetch('${config.apiUrl.replace('/api', '')}/api/form-data', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    siteCode: '${config.siteCode}',
+    userData: coregData,
+    timestamp: new Date().toISOString()
+  })
+})
+.then(response => response.json())
+.then(data => {
+  console.log('CoReg data submitted:', data);
+})
+.catch(error => {
+  console.error('CoReg submission error:', error);
+});`;
 }

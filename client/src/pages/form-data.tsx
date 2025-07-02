@@ -91,7 +91,7 @@ export default function FormDataPage() {
     }
   };
 
-  const filteredSubmissions = submissions?.filter((submission: FormSubmission) => {
+  const filteredSubmissions = (submissions || []).filter((submission: FormSubmission) => {
     const matchesSearch = !searchTerm || 
       submission.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       submission.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -99,7 +99,7 @@ export default function FormDataPage() {
       submission.siteName?.toLowerCase().includes(searchTerm.toLowerCase());
     
     return matchesSearch;
-  }) || [];
+  });
 
   return (
     <div className="space-y-6">
@@ -118,7 +118,7 @@ export default function FormDataPage() {
             <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{submissions?.length || 0}</div>
+            <div className="text-2xl font-bold">{(submissions || []).length}</div>
             <p className="text-xs text-muted-foreground">
               All time submissions
             </p>
@@ -132,7 +132,7 @@ export default function FormDataPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {new Set(submissions?.map((s: FormSubmission) => s.email)).size || 0}
+              {new Set((submissions || []).map((s: FormSubmission) => s.email)).size}
             </div>
             <p className="text-xs text-muted-foreground">
               Unique email addresses
@@ -147,9 +147,9 @@ export default function FormDataPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {submissions?.filter((s: FormSubmission) => 
+              {(submissions || []).filter((s: FormSubmission) => 
                 new Date(s.submittedAt).toDateString() === new Date().toDateString()
-              ).length || 0}
+              ).length}
             </div>
             <p className="text-xs text-muted-foreground">
               Submitted today
@@ -164,7 +164,7 @@ export default function FormDataPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {sites?.filter((s: Site) => s.status === 'active').length || 0}
+              {(sites || []).filter((s: Site) => s.status === 'active').length}
             </div>
             <p className="text-xs text-muted-foreground">
               Sites collecting data
@@ -205,7 +205,7 @@ export default function FormDataPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Sites</SelectItem>
-                  {sites?.map((site: Site) => (
+                  {(sites || []).map((site: Site) => (
                     <SelectItem key={site.id} value={site.id.toString()}>
                       {site.name}
                     </SelectItem>
