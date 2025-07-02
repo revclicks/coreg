@@ -296,6 +296,7 @@ export default function Campaigns() {
               <TableHeader>
                 <TableRow className="bg-slate-50">
                   <TableHead className="font-semibold">Campaign</TableHead>
+                  <TableHead className="font-semibold">Image</TableHead>
                   <TableHead className="font-semibold">Delivery</TableHead>
                   <TableHead className="font-semibold">Daily Budget</TableHead>
                   <TableHead className="font-semibold">Spend</TableHead>
@@ -329,6 +330,23 @@ export default function Campaigns() {
                             <p className="text-xs text-slate-500">ID: {campaign.id}</p>
                           </div>
                         </div>
+                      </TableCell>
+                      
+                      <TableCell className="text-center">
+                        {campaign.imageUrl ? (
+                          <img 
+                            src={campaign.imageUrl} 
+                            alt={campaign.name}
+                            className="w-16 h-12 object-cover rounded-lg mx-auto"
+                            onError={(e) => {
+                              e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNDgiIHZpZXdCb3g9IjAgMCA2NCA0OCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjQ4IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNC4yNSAxNy43NUMyNC4yNSAxOS4yNjg4IDIzLjAxODggMjAuNSAyMS41IDIwLjVDMTkuOTgxMiAyMC41IDE4Ljc1IDE5LjI2ODggMTguNzUgMTcuNzVDMTguNzUgMTYuMjMxMiAxOS45ODEyIDE1IDIxLjUgMTVDMjMuMDE4OCAxNSAyNC4yNSAxNi4yMzEyIDI0LjI1IDE3Ljc1WiIgZmlsbD0iIzlDQTNBRiIvPgo8cGF0aCBkPSJNMTYgMjguNUwyMiAyMi41TDI2IDI2LjVMMzQgMTguNUw0OCAzMi41VjMzLjVIMTZWMjguNVoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
+                            }}
+                          />
+                        ) : (
+                          <div className="w-16 h-12 bg-gray-100 rounded-lg mx-auto flex items-center justify-center">
+                            <span className="text-gray-400 text-xs">No image</span>
+                          </div>
+                        )}
                       </TableCell>
                       
                       <TableCell className="text-center">
