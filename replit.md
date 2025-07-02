@@ -104,8 +104,33 @@ This is a full-stack Co-Registration marketing platform built with Node.js, Reac
 - **Migrations**: Automated migrations via Drizzle Kit
 - **Connection**: Environment-based DATABASE_URL configuration
 
+## Deployment Strategy
+
+### Automated DigitalOcean Setup
+- **Complete automation**: One-command installer handles entire server setup
+- **Installation script**: `setup-digitalocean.sh` - fully automated deployment
+- **Quick installer**: `install.sh` - downloads and runs main setup script
+- **GitHub Actions**: Automated deployment on push to main branch
+- **SSL/Security**: Automatic Let's Encrypt certificates and security headers
+- **Monitoring**: Built-in health checks and log rotation
+
+### Production Configuration
+- **Server Requirements**: Ubuntu 22.04 LTS (minimum 2GB RAM, 1 CPU)
+- **Tech Stack**: Node.js 20, PostgreSQL, Nginx, PM2, Certbot
+- **Security**: Firewall, SSL certificates, security headers, rate limiting
+- **Monitoring**: PM2 process management, log rotation, health checks
+
+### Deployment Commands
+- **Initial setup**: `curl -sSL https://raw.githubusercontent.com/user/repo/main/install.sh | bash`
+- **Updates**: `cd /var/www/coreg-platform && ./deploy.sh`
+- **Monitoring**: `pm2 logs coreg-platform`, `./monitor.sh`
+- **Management**: `pm2 restart coreg-platform`, `sudo systemctl status nginx`
+
 ## Changelog
 
+- January 2, 2025. Fixed progressive flow logic to show all 5 ads properly
+- January 2, 2025. Fixed site manager page JavaScript error with null safety
+- January 2, 2025. Created automated DigitalOcean deployment scripts
 - June 12, 2025. Initial setup
 
 ## User Preferences
