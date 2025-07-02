@@ -684,7 +684,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type: flowType as "progressive" | "front_loaded" | "minimal",
         questionsPerAd: flowType === "minimal" ? 1 : flowType === "progressive" ? 2 : 0,
         maxQuestions: flowType === "minimal" ? 4 : flowType === "progressive" ? 6 : 10,
-        maxAds: flowType === "minimal" ? 4 : 3,
+        maxAds: flowType === "minimal" ? 4 : 5,
         requireEmail: true
       };
 

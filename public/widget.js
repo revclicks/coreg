@@ -1028,7 +1028,7 @@
 
         if (flowResult.action === 'ad') {
           // Show another ad
-          console.log('Showing next ad...');
+          console.log(`🎯 FLOW SAYS SHOW AD - Current ads shown: ${flowResult.state?.adsShown || 0}, Max ads: ${flowResult.state?.maxAds || 'unknown'}`);
           this.showAd();
         } else if (flowResult.action === 'complete') {
           // Flow is complete
