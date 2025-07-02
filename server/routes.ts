@@ -1688,6 +1688,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Widget code generation
+  app.post("/api/widget/generate-code", async (req, res) => {
+    try {
+      const { siteId, fields, styling, behavior, integration } = req.body;
+      
+      // Get site details
+      const site = await storage.getSite(siteId);
+      if (!site) {
+        return res.status(404).json({ message: "Site not found" });
+      }
+
+      // Generate the widget embed code
+      const widgetCode = `
+<!-- CoReg Widget for ${site.name} -->
+<div id="coreg-widget-${site.siteCode}" class="coreg-widget-container"></div>
+<script>
+(function() {
+  const config = {
+    siteCode: "${site.siteCode}",
+    fields: ${JSON.stringify(fields || ['email', 'firstName', 'lastName'])},
+    styling: ${JSON.stringify(styling || {
+      theme: 'default',
+      primaryColor: '#3b82f6',
+      borderRadius: '8',
+      fontSize: '14'
+    })},
+    behavior: ${JSON.stringify(behavior || {
+      showProgressBar: true,
+      enableValidation: true,
+      submitButtonText: 'Submit',
+      thankYouMessage: 'Thank you for your submission!'
+    })},
+    integration: ${JSON.stringify(integration || {
+      webhookUrl: '',
+      redirectUrl: '',
+      trackingCode: ''
+    })}
+  };
+
+  // Load the widget script
+  const script = document.createElement('script');
+  script.src = '${process.env.NODE_ENV === 'production' ? 'https://' + req.get('host') : 'http://localhost:5000'}/widget.js';
+  script.onload = function() {
+    if (window.CoRegWidget) {
+      new window.CoRegWidget(config);
+    }
+  };
+  document.head.appendChild(script);
+})();
+</script>
+<!-- End CoReg Widget -->`.trim();
+
+      res.json({ 
+        success: true,
+        code: widgetCode,
+        siteCode: site.siteCode,
+        siteName: site.name
+      });
+    } catch (error) {
+      console.error('Error generating widget code:', error);
+      res.status(500).json({ message: "Failed to generate widget code" });
+    }
+  });
+
   // Personal information collection endpoint
   app.post("/api/collect-personal-info", async (req, res) => {
     try {
