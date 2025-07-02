@@ -769,6 +769,13 @@
 
     async showAd() {
       try {
+        console.log('🎯 Starting ad request...');
+        console.log('📊 Session info:', {
+          sessionId: this.sessionId,
+          siteCode: this.siteCode,
+          currentPhase: this.currentPhase
+        });
+        
         // Request ad based on responses
         const adRequest = {
           sessionId: this.sessionId,
