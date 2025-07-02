@@ -833,21 +833,21 @@
             Based on your responses, this offer might interest you.
           </p>
           
-          <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 20px;">
+          <div style="margin-bottom: 20px;">
             <button class="widget-ad-click-btn" data-url="${campaign.url}"
-                    style="padding: 15px 30px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; transition: background 0.2s;">
+                    style="display: block; width: 100%; max-width: 300px; margin: 0 auto; padding: 15px 30px; background: #10b981; color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 16px; cursor: pointer; transition: background 0.2s;">
               Learn More
-            </button>
-            
-            <button class="widget-skip-btn"
-                    style="padding: 10px 20px; background: #6b7280; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer;">
-              Skip
             </button>
           </div>
           
-          <p style="margin: 0; color: #6b7280; font-size: 14px;">
+          <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px;">
             Thank you for completing our questionnaire!
           </p>
+          
+          <button class="widget-skip-btn"
+                  style="padding: 8px 20px; background: #e5e7eb; color: #6b7280; border: none; border-radius: 6px; font-size: 12px; cursor: pointer;">
+            Skip this offer
+          </button>
         </div>
         
         <!-- Close button -->
