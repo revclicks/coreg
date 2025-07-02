@@ -1,18 +1,93 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Copy, RefreshCw } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Edit, Trash2, Copy, RefreshCw, Code, Settings, Download, Globe, Palette, External } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import AddSiteModal from "@/components/modals/add-site-modal";
 import type { Site } from "@shared/schema";
 
 export default function Sites() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingSite, setEditingSite] = useState<Site | null>(null);
+  const [selectedSite, setSelectedSite] = useState<number | null>(null);
+  const [widgetConfig, setWidgetConfig] = useState({
+    fields: ['email', 'firstName', 'lastName'],
+    styling: {
+      theme: 'default',
+      primaryColor: '#3b82f6',
+      borderRadius: '8',
+      fontSize: '14'
+    },
+    behavior: {
+      showProgressBar: true,
+      enableValidation: true,
+      submitButtonText: 'Submit',
+      thankYouMessage: 'Thank you for your submission!'
+    },
+    integration: {
+      webhookUrl: '',
+      redirectUrl: '',
+      trackingCode: ''
+    }
+  });
+  const [generatedCode, setGeneratedCode] = useState('');
   const { toast } = useToast();
+
+  // Widget generation mutation
+  const generateWidgetMutation = useMutation({
+    mutationFn: async (config: any) => {
+      return await apiRequest('/api/widget/generate-code', {
+        method: 'POST',
+        body: JSON.stringify({
+          siteId: selectedSite,
+          ...config
+        })
+      });
+    },
+    onSuccess: (data) => {
+      setGeneratedCode(data.code);
+      toast({
+        title: "Widget code generated!",
+        description: "Your embed code is ready to use.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to generate widget code.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleGenerateWidget = () => {
+    if (!selectedSite) {
+      toast({
+        title: "Error",
+        description: "Please select a site first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    generateWidgetMutation.mutate(widgetConfig);
+  };
+
+  const handleCopyWidget = () => {
+    navigator.clipboard.writeText(generatedCode);
+    toast({
+      title: "Code copied!",
+      description: "Widget embed code has been copied to clipboard.",
+    });
+  };
 
   const { data: sites, isLoading, refetch: refetchSites } = useQuery<Site[]>({
     queryKey: ["/api/sites"],
@@ -87,25 +162,40 @@ export default function Sites() {
   return (
     <div className="space-y-6">
       <Card>
-        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-800">Site Manager</h3>
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => refetchSites()}
-              className="gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Refresh
-            </Button>
-            <Button onClick={() => setShowAddModal(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Site
-            </Button>
-          </div>
-        </div>
-        <CardContent className="p-6">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Site Manager & Widget Configuration</span>
+            <div className="flex items-center space-x-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchSites()}
+                className="gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Refresh
+              </Button>
+              <Button onClick={() => setShowAddModal(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Site
+              </Button>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="sites" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="sites" className="flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                Site Management
+              </TabsTrigger>
+              <TabsTrigger value="widgets" className="flex items-center gap-2">
+                <Code className="w-4 h-4" />
+                Widget Configuration
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="sites" className="space-y-6 mt-6">
           {/* External Demo Links */}
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
             <h4 className="text-lg font-semibold text-green-800 mb-2">Live Demo Pages</h4>
@@ -198,6 +288,130 @@ export default function Sites() {
               </Card>
             ))}
           </div>
+            </TabsContent>
+            
+            <TabsContent value="widgets" className="space-y-6 mt-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Site Selection */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="w-5 h-5" />
+                      Site Selection
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Label htmlFor="site-select">Select Site</Label>
+                    <Select value={selectedSite?.toString() || ""} onValueChange={(value) => setSelectedSite(Number(value))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a site for widget configuration" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sites?.map((site) => (
+                          <SelectItem key={site.id} value={site.id.toString()}>
+                            {site.name} ({site.domain})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </CardContent>
+                </Card>
+
+                {/* Widget Configuration */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Palette className="w-5 h-5" />
+                      Widget Styling
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="theme">Theme</Label>
+                      <Select value={widgetConfig.styling.theme} onValueChange={(value) => 
+                        setWidgetConfig(prev => ({ ...prev, styling: { ...prev.styling, theme: value } }))
+                      }>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="default">Default</SelectItem>
+                          <SelectItem value="minimal">Minimal</SelectItem>
+                          <SelectItem value="modern">Modern</SelectItem>
+                          <SelectItem value="dark">Dark</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="primary-color">Primary Color</Label>
+                      <Input 
+                        type="color" 
+                        value={widgetConfig.styling.primaryColor}
+                        onChange={(e) => setWidgetConfig(prev => ({ 
+                          ...prev, 
+                          styling: { ...prev.styling, primaryColor: e.target.value } 
+                        }))}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="border-radius">Border Radius (px)</Label>
+                      <Input 
+                        type="number" 
+                        value={widgetConfig.styling.borderRadius}
+                        onChange={(e) => setWidgetConfig(prev => ({ 
+                          ...prev, 
+                          styling: { ...prev.styling, borderRadius: e.target.value } 
+                        }))}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Widget Generation */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Code className="w-5 h-5" />
+                    Generate Widget Code
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-4">
+                    <Button 
+                      onClick={handleGenerateWidget}
+                      disabled={!selectedSite || generateWidgetMutation.isPending}
+                      className="gap-2"
+                    >
+                      <Code className="w-4 h-4" />
+                      {generateWidgetMutation.isPending ? 'Generating...' : 'Generate Widget'}
+                    </Button>
+                    
+                    {generatedCode && (
+                      <Button variant="outline" onClick={handleCopyWidget} className="gap-2">
+                        <Copy className="w-4 h-4" />
+                        Copy Code
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {generatedCode && (
+                    <div className="mt-4">
+                      <Label>Generated Embed Code</Label>
+                      <Textarea 
+                        value={generatedCode}
+                        readOnly
+                        className="font-mono text-sm"
+                        rows={8}
+                      />
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
