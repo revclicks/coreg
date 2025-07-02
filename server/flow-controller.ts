@@ -189,9 +189,22 @@ export class FlowController {
    * Progressive flow: 2-3 questions → ad → 2-3 questions → ad
    */
   private getProgressiveFlowAction(): "question" | "ad" | "complete" {
+    // If all questions are complete, show remaining ads first
+    const allQuestionsCompleted = this.state.questionsAnswered >= this.config.maxQuestions || 
+                                  this.state.questionsAnswered >= this.availableQuestions.length;
+    
+    if (allQuestionsCompleted) {
+      if (this.state.adsShown < this.config.maxAds) {
+        return "ad";
+      } else {
+        this.state.isComplete = true;
+        return "complete";
+      }
+    }
+    
     const questionsInCurrentBatch = this.state.questionsAnswered % this.config.questionsPerAd;
     
-    // If we've completed a batch of questions, show an ad
+    // If we've completed a batch of questions, show an ad (but only during question phase)
     if (questionsInCurrentBatch === 0 && 
         this.state.questionsAnswered > 0 && 
         this.state.adsShown < this.config.maxAds) {
@@ -204,7 +217,7 @@ export class FlowController {
       return "question";
     }
     
-    // Final ad if we haven't shown all ads yet
+    // Fallback: show remaining ads
     if (this.state.adsShown < this.config.maxAds) {
       return "ad";
     }
