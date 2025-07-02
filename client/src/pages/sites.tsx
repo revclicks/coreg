@@ -134,7 +134,7 @@ export default function Sites() {
     setEditingSite(null);
   };
 
-  const getVerticalColor = (vertical: string) => {
+  const getVerticalColor = (vertical: string | null | undefined) => {
     const colors: Record<string, string> = {
       health: "bg-blue-100 text-blue-800",
       finance: "bg-green-100 text-green-800",
@@ -142,7 +142,7 @@ export default function Sites() {
       energy: "bg-amber-100 text-amber-800",
       travel: "bg-pink-100 text-pink-800",
     };
-    return colors[vertical.toLowerCase()] || "bg-gray-100 text-gray-800";
+    return colors[vertical?.toLowerCase() || ""] || "bg-gray-100 text-gray-800";
   };
 
   if (isLoading) {
