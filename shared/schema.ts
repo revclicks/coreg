@@ -88,19 +88,15 @@ export const sites = pgTable("sites", {
   id: serial("id").primaryKey(),
   publisherId: integer("publisher_id").notNull().references(() => users.id),
   name: text("name").notNull(),
+  url: text("url"),
+  description: text("description"),
+  category: text("category"),
+  monthlyVisitors: integer("monthly_visitors"),
+  status: text("status").notNull().default("active"),
+  widgetConfig: jsonb("widget_config"),
   domain: text("domain").notNull(),
-  vertical: text("vertical").notNull(),
-  excludedVerticals: jsonb("excluded_verticals"), // JSON array of excluded verticals
-  siteCode: text("site_code").notNull().unique(),
-  active: boolean("active").notNull().default(true),
-  flowConfig: jsonb("flow_config").default({
-    type: "progressive", // progressive, front_loaded, minimal
-    questionsPerAd: 2,
-    maxQuestions: 6,
-    maxAds: 3,
-    requireEmail: true
-  }),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // User sessions table
