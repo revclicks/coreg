@@ -819,7 +819,7 @@
         <div style="background: white; border-radius: 12px; padding: 40px; max-width: 500px; width: 90%; margin: 40px auto; box-shadow: 0 20px 40px rgba(0,0,0,0.1); text-align: center;">
           ${campaign.imageUrl ? `
             <img src="${campaign.imageUrl}" alt="Special Offer" 
-                 style="width: 100%; max-width: 300px; height: auto; border-radius: 12px; margin-bottom: 20px;">
+                 style="width: 100%; max-width: 450px; height: 250px; object-fit: cover; border-radius: 12px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
           ` : ''}
           
           <p style="margin: 0 0 25px 0; color: #6b7280; font-size: 16px; line-height: 1.5;">
