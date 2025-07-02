@@ -818,13 +818,9 @@
         <!-- Ad Card -->
         <div style="background: white; border-radius: 12px; padding: 40px; max-width: 500px; width: 90%; margin: 40px auto; box-shadow: 0 20px 40px rgba(0,0,0,0.1); text-align: center;">
           ${campaign.imageUrl ? `
-            <img src="${campaign.imageUrl}" alt="${campaign.name}" 
+            <img src="${campaign.imageUrl}" alt="Special Offer" 
                  style="width: 100%; max-width: 300px; height: auto; border-radius: 12px; margin-bottom: 20px;">
           ` : ''}
-          
-          <h2 style="margin: 0 0 15px 0; color: #1f2937; font-size: 24px; font-weight: 600;">
-            ${campaign.name}
-          </h2>
           
           <p style="margin: 0 0 25px 0; color: #6b7280; font-size: 16px; line-height: 1.5;">
             Based on your responses, this offer might interest you.
