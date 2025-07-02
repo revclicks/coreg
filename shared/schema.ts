@@ -488,6 +488,26 @@ export const flowAbTestSessions = pgTable("flow_ab_test_sessions", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Form Submissions table for backend form integration
+export const formSubmissions = pgTable("form_submissions", {
+  id: serial("id").primaryKey(),
+  siteId: integer("site_id").references(() => sites.id),
+  siteName: varchar("site_name", { length: 255 }),
+  email: varchar("email", { length: 255 }),
+  firstName: varchar("first_name", { length: 100 }),
+  lastName: varchar("last_name", { length: 100 }),
+  phone: varchar("phone", { length: 20 }),
+  dateOfBirth: varchar("date_of_birth", { length: 10 }),
+  zipCode: varchar("zip_code", { length: 10 }),
+  gender: varchar("gender", { length: 10 }),
+  userData: jsonb("user_data"), // Complete form data as JSON
+  submittedAt: timestamp("submitted_at").defaultNow(),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  userAgent: text("user_agent"),
+  sessionId: varchar("session_id", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const questionsRelations = relations(questions, ({ many }) => ({
   responses: many(questionResponses),
@@ -828,6 +848,11 @@ export const insertUserSchema = createInsertSchema(users).omit({
   updatedAt: true,
 });
 
+export const insertFormSubmissionSchema = createInsertSchema(formSubmissions).omit({
+  id: true,
+  createdAt: true,
+});
+
 // RTB Campaign Performance schema declared below
 
 // Types
@@ -985,3 +1010,6 @@ export type InsertRtbAuction = z.infer<typeof insertRtbAuctionSchema>;
 
 export type RtbCampaignPerformance = typeof rtbCampaignPerformance.$inferSelect;
 export type InsertRtbCampaignPerformance = z.infer<typeof insertRtbCampaignPerformanceSchema>;
+
+export type FormSubmission = typeof formSubmissions.$inferSelect;
+export type InsertFormSubmission = z.infer<typeof insertFormSubmissionSchema>;

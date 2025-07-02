@@ -5,7 +5,7 @@ import {
   abTestExperiments, abTestVariants, abTestResults, questionStats,
   rtbBidRequests, rtbBids, rtbAuctions, rtbCampaignPerformance,
   userInteractions, revenueSettings, revenueTransactions, userPayouts,
-  adminRevenueSummary,
+  adminRevenueSummary, formSubmissions,
   type User, type InsertUser,
   type Question, type InsertQuestion,
   type Campaign, type InsertCampaign,
@@ -29,7 +29,8 @@ import {
   type RevenueSettings, type InsertRevenueSettings,
   type RevenueTransaction, type InsertRevenueTransaction,
   type UserPayout, type InsertUserPayout,
-  type AdminRevenueSummary, type InsertAdminRevenueSummary
+  type AdminRevenueSummary, type InsertAdminRevenueSummary,
+  type FormSubmission, type InsertFormSubmission
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
@@ -150,6 +151,14 @@ export interface IStorage {
   recordRtbPerformance(performance: InsertRtbCampaignPerformance): Promise<RtbCampaignPerformance>;
   getRtbPerformance(campaignId: number, startDate?: Date, endDate?: Date): Promise<RtbCampaignPerformance[]>;
   getRtbAnalytics(): Promise<any>;
+
+  // Form Submission Operations
+  createFormSubmission(submission: InsertFormSubmission): Promise<FormSubmission>;
+  getFormSubmissions(filters?: {
+    siteId?: number;
+    searchTerm?: string;
+    dateFilter?: string;
+  }): Promise<FormSubmission[]>;
 }
 
 export class DatabaseStorage implements IStorage {
