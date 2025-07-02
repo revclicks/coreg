@@ -519,7 +519,7 @@
                         },
                         body: JSON.stringify({
                             sessionId: currentSessionId,
-                            siteCode: 'L-2a1xhXBi',
+                            siteCode: 'senior-benefits-demo',
                             currentState: {
                                 currentPhase: "questions",
                                 questionsAnswered: 0,
@@ -536,7 +536,7 @@
                         console.log('Flow result:', result);
                         
                         // Redirect to the widget-based questionnaire flow
-                        window.location.href = `/widget.html?session=${currentSessionId}&site=L-2a1xhXBi`;
+                        window.location.href = `/widget.html?session=${currentSessionId}&site=senior-benefits-demo`;
                     }
                 } else {
                     throw new Error('Failed to create session');
