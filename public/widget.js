@@ -797,6 +797,8 @@
         const adData = await response.json();
         
         if (adData.campaign) {
+          console.log('🖼️ Campaign data received:', adData.campaign);
+          console.log('🖼️ Image URL:', adData.campaign.imageUrl);
           this.renderAd(adData.campaign);
         } else {
           this.showThankYou();
