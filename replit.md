@@ -128,6 +128,8 @@ This is a full-stack Co-Registration marketing platform built with Node.js, Reac
 
 ## Changelog
 
+- January 7, 2025. Updated Express server to use environment PORT variable with 0.0.0.0 binding for deployment compatibility
+- January 7, 2025. Added HTTP routes for web service detection by hosting platforms (Render, Cloudways, etc.)
 - January 7, 2025. Fixed admin seeding logic to handle existing admins gracefully
 - January 7, 2025. Added health check endpoint (/health) for deployment monitoring
 - January 7, 2025. Improved error handling to prevent deployment failures on duplicate admin creation
