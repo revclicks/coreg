@@ -27,6 +27,23 @@ app.get('/status', (req, res) => {
   });
 });
 
+// Add a simple root route for production deployment detection
+if (process.env.NODE_ENV === 'production') {
+  app.get('/', (req, res) => {
+    res.json({
+      name: 'CoReg Marketing Platform',
+      status: 'online',
+      version: '1.0.0',
+      timestamp: new Date().toISOString(),
+      endpoints: {
+        health: '/health',
+        status: '/status',
+        api: '/api'
+      }
+    });
+  });
+}
+
 // Session configuration for authentication
 const MemoryStoreSession = MemoryStore(session);
 app.use(session({
@@ -113,11 +130,33 @@ app.use((req, res, next) => {
   });
 
   // Use environment PORT for deployment flexibility
-  const port = process.env.PORT || 5000;
+  const port = parseInt(process.env.PORT || '5000', 10);
+  const host = process.env.HOST || '0.0.0.0';
   
   // Bind HTTP server to ensure proper port detection by hosting platforms
-  server.listen(port, '0.0.0.0', () => {
-    console.log(`Server running on 0.0.0.0:${port}`);
-    console.log(`Health check available at: http://0.0.0.0:${port}/health`);
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Port ${port} is already in use`);
+      process.exit(1);
+    } else {
+      console.error('Server error:', err);
+      process.exit(1);
+    }
+  });
+
+  // Use callback-style listen for better compatibility with hosting platforms
+  server.listen(port, () => {
+    const address = server.address();
+    const actualPort = address && typeof address === 'object' ? address.port : port;
+    const actualHost = address && typeof address === 'object' ? address.address : host;
+    
+    console.log(`CoReg Server running on ${actualHost}:${actualPort}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`Health endpoint: /health`);
+    console.log(`Status endpoint: /status`);
+    
+    if (process.env.RENDER) {
+      console.log(`RENDER: Port ${actualPort} is bound and accessible`);
+    }
   });
 })();
