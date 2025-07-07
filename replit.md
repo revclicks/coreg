@@ -126,8 +126,25 @@ This is a full-stack Co-Registration marketing platform built with Node.js, Reac
 - **Monitoring**: `pm2 logs coreg-platform`, `./monitor.sh`
 - **Management**: `pm2 restart coreg-platform`, `sudo systemctl status nginx`
 
+## Deployment Strategy
+
+### Railway Deployment (Recommended)
+- **Platform**: Railway.app for production hosting
+- **Configuration**: Optimized server binding with IPv6 support (`:::PORT`)
+- **Health Checks**: `/health` and `/status` endpoints for monitoring
+- **Database**: Railway PostgreSQL service with automatic connection
+- **Build Process**: `npm run build && npm run db:push`
+- **Environment**: Production Node.js with automatic scaling
+
+### Railway Configuration Files
+- `railway.json` - Deployment configuration with health checks
+- `railway-deploy.md` - Complete deployment guide
+- Environment variables: `DATABASE_URL`, `SESSION_SECRET`, `NODE_ENV`
+
 ## Changelog
 
+- January 7, 2025. Added Railway deployment configuration with optimized health checks and build process
+- January 7, 2025. Created railway.json configuration file for automated deployment
 - January 7, 2025. Fixed port binding architecture - properly create HTTP server with Express app binding for external accessibility
 - January 7, 2025. Updated Express server to use environment PORT variable with 0.0.0.0 binding for deployment compatibility
 - January 7, 2025. Added HTTP routes for web service detection by hosting platforms (Render, Cloudways, etc.)
