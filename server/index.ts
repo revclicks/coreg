@@ -62,8 +62,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Initialize master admin account
-  await seedMasterAdmin();
+  // Initialize master admin account with error handling
+  try {
+    await seedMasterAdmin();
+  } catch (error) {
+    console.warn("⚠️ Admin seeding failed, but server will continue:", error);
+    // Continue server startup even if seeding fails
+  }
   
   const server = await registerRoutes(app);
 

@@ -128,6 +128,9 @@ This is a full-stack Co-Registration marketing platform built with Node.js, Reac
 
 ## Changelog
 
+- January 7, 2025. Fixed admin seeding logic to handle existing admins gracefully
+- January 7, 2025. Added health check endpoint (/health) for deployment monitoring
+- January 7, 2025. Improved error handling to prevent deployment failures on duplicate admin creation
 - January 2, 2025. Fixed progressive flow logic to show all 5 ads properly
 - January 2, 2025. Fixed site manager page JavaScript error with null safety
 - January 2, 2025. Created automated DigitalOcean deployment scripts
