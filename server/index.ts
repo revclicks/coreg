@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import { createServer } from "http";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { seedMasterAdmin } from "./seed-master-admin";
@@ -81,7 +82,10 @@ app.use((req, res, next) => {
     // Continue server startup even if seeding fails
   }
   
-  const server = await registerRoutes(app);
+  // Create HTTP server first
+  const server = createServer(app);
+  
+  await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -110,7 +114,10 @@ app.use((req, res, next) => {
 
   // Use environment PORT for deployment flexibility
   const port = process.env.PORT || 5000;
+  
+  // Bind HTTP server to ensure proper port detection by hosting platforms
   server.listen(port, '0.0.0.0', () => {
     console.log(`Server running on 0.0.0.0:${port}`);
+    console.log(`Health check available at: http://0.0.0.0:${port}/health`);
   });
 })();

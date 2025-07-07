@@ -68,7 +68,7 @@ async function authenticateToken(req: AuthenticatedRequest, res: Response, next:
   }
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: Express): Promise<void> {
   // Add cookie parser middleware
   app.use(cookieParser());
 
@@ -2812,8 +2812,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  const httpServer = createServer(app);
-  return httpServer;
+  // Routes are now registered on the app
+  // HTTP server is created in index.ts
 }
 
 // Helper functions for widget code generation
