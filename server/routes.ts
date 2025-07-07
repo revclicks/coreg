@@ -2878,3 +2878,14 @@ fetch('${config.apiUrl.replace('/api', '')}/api/form-data', {
   console.error('CoReg submission error:', error);
 });`;
 }
+
+  // Production static file serving
+  if (process.env.NODE_ENV === 'production') {
+    // Serve static files from dist/public
+    app.use(express.static('dist/public'));
+    
+    // Handle SPA routing - serve index.html for all non-API routes
+    app.get('*', (_req, res) => {
+      res.sendFile(join(process.cwd(), 'dist/public/index.html'));
+    });
+  }
